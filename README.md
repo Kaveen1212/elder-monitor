@@ -4,21 +4,19 @@ Analyses a continuous indoor video of one resident and reports what they are doi
 leave and return to bed, how long each state lasts, and whether anything needs `NORMAL`, `MONITOR` or `ALERT`.
 
 Pretrained pose estimation handles every frame, and explicit temporal logic turns frames into states and
-events. A context agent is only invoked when an observation is ambiguous. It chooses bounded tools (look back,
-look ahead, bed-relation geometry, a Qwen2.5-VL check) and returns evidence that the temporal engine and the
-bed-event state machine still have to accept.
+events. A context agent checks every exit candidate and is otherwise invoked only when an observation is
+ambiguous. It chooses bounded tools (look back, look ahead, bed-relation geometry, a Qwen2.5-VL check) and
+returns evidence that the temporal engine and the bed-event state machine still have to accept.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    V[Video] --> P[YOLO11n-pose<br/>+ ByteTrack] --> S[Resident<br/>identity] --> F[Posture + bed<br/>features] --> Q[Frame<br/>proposals]
-    Q --> A{Context agent} --> E[Temporal engine<br/>dwell + hysteresis] --> B[Bed event FSM] --> K[Alert policy] --> O[Reports]
-    A <-->|ambiguous| T[look_back · look_ahead<br/>inspect_bed_relation · VLM]
-    B <-->|exit candidate| A
-```
+![System architecture](docs/architecture.png)
 
-Full diagram and module map: [docs/architecture.md](docs/architecture.md).
+Frames flow top to bottom: pretrained vision models first (blue), then explicit rules and temporal logic (green).
+The context agent (yellow) is the one loop: it can look back and ahead, check the body against the bed or ask
+Qwen2.5-VL, and the bed-event state machine calls it for every exit candidate. The editable source is
+[docs/architecture.drawio](docs/architecture.drawio) (open it in [draw.io](https://app.diagrams.net)); the module map
+is in [docs/architecture.md](docs/architecture.md).
 
 ## Setup
 
