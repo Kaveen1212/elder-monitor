@@ -16,6 +16,8 @@
   "total_out_of_bed_sec": 9.6,
   "total_unknown_bed_sec": 11.8,
   "longest_out_of_bed_period_sec": 5.6,
+  "longest_away_episode_sec": 0.0,
+  "away_episodes": [],
   "final_state": "sitting_outside_bed",
   "final_bed_status": "OUT_OF_BED",
   "final_decision": "NORMAL",

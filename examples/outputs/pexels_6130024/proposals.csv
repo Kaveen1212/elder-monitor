@@ -1,69 +1,69 @@
-t,label,confidence,reason,source
-0.0,UNKNOWN,0.0,target_not_selected,rules
-0.2,UNKNOWN,0.0,target_not_selected,rules
-0.4,UNKNOWN,0.0,target_not_selected,rules
-0.6,UNKNOWN,0.0,target_not_selected,rules
-0.8,UNKNOWN,0.0,target_not_selected,rules
-1.0,UNKNOWN,0.0,target_not_selected,rules
-1.2,UNKNOWN,0.0,target_not_selected,rules
-1.4,UNKNOWN,0.0,target_not_selected,rules
-1.6,UNKNOWN,0.0,target_not_selected,rules
-1.8,UNKNOWN,0.0,target_not_selected,rules
-2.0,UNKNOWN,0.0,target_not_selected,rules
-2.2,UNKNOWN,0.0,target_not_selected,rules
-2.4,UNKNOWN,0.0,target_not_selected,rules
-2.6,UNKNOWN,0.0,target_not_selected,rules
-2.8,UNKNOWN,0.0,target_not_selected,rules
-3.0,UNKNOWN,0.0,target_not_selected,rules
-3.2,UNKNOWN,0.0,target_not_selected,rules
-3.4,UNKNOWN,0.0,target_not_selected,rules
-3.6,UNKNOWN,0.0,target_not_selected,rules
-3.8,UNKNOWN,0.0,target_not_selected,rules
-4.0,UNKNOWN,0.0,target_not_selected,rules
-4.2,UNKNOWN,0.0,target_not_selected,rules
-4.4,UNKNOWN,0.0,target_not_selected,rules
-4.6,UNKNOWN,0.0,target_not_selected,rules
-4.8,UNKNOWN,0.0,target_not_selected,rules
-5.0,UNKNOWN,0.0,target_not_selected,rules
-5.2,UNKNOWN,0.0,target_not_selected,rules
-5.4,UNKNOWN,0.0,target_not_selected,rules
-5.6,UNKNOWN,0.0,target_not_selected,rules
-5.8,UNKNOWN,0.0,target_not_selected,rules
-6.0,UNKNOWN,0.0,target_not_selected,rules
-6.2,UNKNOWN,0.0,target_not_selected,rules
-6.4,UNKNOWN,0.0,target_not_selected,rules
-6.6,UNKNOWN,0.0,target_not_selected,rules
-6.8,UNKNOWN,0.0,target_not_selected,rules
-7.0,UNKNOWN,0.0,target_not_selected,rules
-7.2,UNKNOWN,0.0,target_not_selected,rules
-7.4,UNKNOWN,0.0,target_not_selected,rules
-7.6,UNKNOWN,0.0,target_not_selected,rules
-7.8,UNKNOWN,0.0,target_not_selected,rules
-8.0,UNKNOWN,0.0,target_not_selected,rules
-8.2,UNKNOWN,0.0,target_not_selected,rules
-8.4,UNKNOWN,0.0,target_not_selected,rules
-8.6,UNKNOWN,0.0,target_not_selected,rules
-8.8,UNKNOWN,0.0,target_not_selected,rules
-9.0,UNKNOWN,0.0,target_not_selected,rules
-9.2,UNKNOWN,0.0,target_not_selected,rules
-9.4,UNKNOWN,0.0,target_not_selected,rules
-9.6,UNKNOWN,0.0,target_not_selected,rules
-9.8,UNKNOWN,0.0,target_not_selected,rules
-10.0,UNKNOWN,0.0,target_not_selected,rules
-10.2,UNKNOWN,0.0,target_not_selected,rules
-10.4,UNKNOWN,0.0,target_not_selected,rules
-10.6,UNKNOWN,0.0,target_not_selected,rules
-10.8,UNKNOWN,0.0,target_not_selected,rules
-11.0,UNKNOWN,0.0,target_not_selected,rules
-11.2,UNKNOWN,0.0,target_not_selected,rules
-11.4,UNKNOWN,0.0,target_not_selected,rules
-11.6,LYING_IN_BED,0.45,VLM check across the gap,agent
-11.8,LYING_IN_BED,0.45,VLM check across the gap,agent
-12.0,LYING_IN_BED,0.45,VLM check across the gap,agent
-12.2,LYING_IN_BED,0.45,VLM check across the gap,agent
-12.4,LYING_IN_BED,0.45,VLM check across the gap,agent
-12.6,LYING_IN_BED,0.45,VLM check across the gap,agent
-12.8,LYING_IN_BED,0.45,VLM check across the gap,agent
-13.0,LYING_IN_BED,0.45,VLM check across the gap,agent
-13.2,LYING_IN_BED,0.45,VLM check across the gap,agent
-13.4,LYING_IN_BED,0.45,VLM check across the gap,agent
+t,label,confidence,reason,source,evidence
+0.0,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+0.2,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+0.4,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+0.6,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+0.8,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+1.0,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+1.2,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+1.4,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+1.6,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+1.8,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+2.0,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+2.2,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+2.4,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+2.6,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+2.8,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+3.0,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+3.2,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+3.4,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+3.6,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+3.8,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+4.0,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+4.2,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+4.4,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+4.6,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+4.8,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+5.0,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+5.2,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+5.4,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+5.6,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+5.8,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+6.0,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+6.2,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+6.4,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+6.6,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+6.8,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+7.0,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+7.2,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+7.4,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+7.6,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+7.8,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+8.0,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+8.2,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+8.4,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+8.6,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+8.8,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+9.0,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+9.2,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+9.4,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+9.6,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+9.8,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+10.0,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+10.2,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+10.4,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+10.6,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+10.8,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+11.0,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+11.2,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+11.4,UNKNOWN,0.0,target_not_selected,rules,UNKNOWN
+11.6,LYING_IN_BED,0.45,VLM check across the gap,agent,UNKNOWN
+11.8,LYING_IN_BED,0.45,VLM check across the gap,agent,UNKNOWN
+12.0,LYING_IN_BED,0.45,VLM check across the gap,agent,LYING_IN_BED
+12.2,LYING_IN_BED,0.45,VLM check across the gap,agent,UNKNOWN
+12.4,LYING_IN_BED,0.45,VLM check across the gap,agent,UNKNOWN
+12.6,LYING_IN_BED,0.45,VLM check across the gap,agent,LYING_IN_BED
+12.8,LYING_IN_BED,0.45,VLM check across the gap,agent,UNKNOWN
+13.0,LYING_IN_BED,0.45,VLM check across the gap,agent,LYING_IN_BED
+13.2,LYING_IN_BED,0.45,VLM check across the gap,agent,UNKNOWN
+13.4,LYING_IN_BED,0.45,VLM check across the gap,agent,UNKNOWN

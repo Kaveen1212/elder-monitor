@@ -148,12 +148,16 @@ def _r(v):
     return None if v is None else round(float(v), 3)
 
 
-def evaluate(pred_dirs, ann_paths, out_dir, tolerance=2.0, resolution=0.1, min_error_sec=2.0, videos=None):
+def evaluate(pred_dirs, ann_paths, out_dir, tolerance=2.0, resolution=0.1, min_error_sec=2.0, videos=None,
+             context_sec=3.0):
+    """Strict scores against the labels. Missed events labelled less than `context_sec` before the end of their
+    clip are also counted separately (`missed_with_short_context`): the recording stops before the dwell and
+    departure evidence a confirmation needs. They stay in the strict counts."""
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     k_act, k_bed = len(ACTIVITY_STATES), len(BED_STATES)
     cm_act, cm_bed = np.zeros((k_act, k_act)), np.zeros((k_bed, k_bed))
-    counts = {e: {"tp": 0, "fp": 0, "fn": 0, "errors": [], "delays": []} for e in EVENT_TYPES}
+    counts = {e: {"tp": 0, "fp": 0, "fn": 0, "short": 0, "errors": [], "delays": []} for e in EVENT_TYPES}
     duration_rows, failures, clips, total_T = [], [], [], 0.0
 
     for n, (pred_dir, ann_path) in enumerate(zip(pred_dirs, ann_paths)):
@@ -176,6 +180,7 @@ def evaluate(pred_dirs, ann_paths, out_dir, tolerance=2.0, resolution=0.1, min_e
             tp, fp, fn, errs = match_events(g_times, [e["time"] for e in p_events], tolerance)
             c = counts[event]
             c["tp"], c["fp"], c["fn"] = c["tp"] + tp, c["fp"] + len(fp), c["fn"] + len(fn)
+            c["short"] += sum(T - t < context_sec for t in fn)
             c["errors"] += errs
             c["delays"] += [e["confirmed"] - e["time"] for e in p_events]
             for kind, times, truth, predicted in (("false", fp, "no event", event), ("missed", fn, event, "no event")):
@@ -207,7 +212,7 @@ def evaluate(pred_dirs, ann_paths, out_dir, tolerance=2.0, resolution=0.1, min_e
         s["sum_abs_error_sec"] += r["abs_error_sec"]
     total = cm_act.sum()
     metrics = {
-        "protocol": {"time_resolution_sec": resolution, "event_tolerance_sec": tolerance,
+        "protocol": {"time_resolution_sec": resolution, "event_tolerance_sec": tolerance, "short_context_sec": context_sec,
                      "event_time": "occurrence start (not confirmation)", "clips": len(clips),
                      "analysed_sec": round(total_T, 2), "coverage_tolerance_sec": COVERAGE_TOLERANCE_SEC},
         "clips": clips,
@@ -233,6 +238,7 @@ def evaluate(pred_dirs, ann_paths, out_dir, tolerance=2.0, resolution=0.1, min_e
             "false_per_hour": _r(fp / hours) if hours else None,
             "mean_abs_time_error_sec": _r(np.mean(np.abs(c["errors"]))) if c["errors"] else None,
             "mean_confirmation_delay_sec": _r(np.mean(c["delays"])) if c["delays"] else None,
+            "missed_with_short_context": c["short"],
         }
 
     (out / "metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")

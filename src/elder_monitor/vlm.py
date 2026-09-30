@@ -51,13 +51,16 @@ class QwenVLM:
         from transformers import AutoModelForImageTextToText, AutoProcessor
 
         v = cfg["vlm"]
-        print(f"loading VLM {v['model']}")
+        revision = v.get("revision")
+        print(f"loading VLM {v['model']}" + (f" at revision {revision}" if revision else ""))
         self.max_side, self.max_new_tokens = v["max_side"], v["max_new_tokens"]
-        self.processor = AutoProcessor.from_pretrained(v["model"])
+        self.processor = AutoProcessor.from_pretrained(v["model"], revision=revision)
         dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
-        self.model = AutoModelForImageTextToText.from_pretrained(v["model"], dtype=dtype, device_map="auto")
+        self.model = AutoModelForImageTextToText.from_pretrained(v["model"], revision=revision, dtype=dtype,
+                                                                 device_map="auto")
         self.model.generation_config.temperature = None
-        self.revision = f"{v['model']}@{getattr(self.model.config, '_commit_hash', None) or 'unknown'}"
+        loaded = getattr(self.model.config, "_commit_hash", None) or revision or "unknown"
+        self.revision = f"{v['model']}@{loaded}"
 
     def ask(self, image_bgr):
         from PIL import Image

@@ -78,6 +78,7 @@ agent:
 vlm:
   enabled: true
   model: Qwen/Qwen2.5-VL-3B-Instruct
+  revision: 66285546d2b821cf421d4f5eb2576359d3770cd3   # Hugging Face commit used for the reported runs; null = latest
   max_calls: 60
   max_side: 448
   max_new_tokens: 64

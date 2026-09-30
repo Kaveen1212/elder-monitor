@@ -1,6 +1,7 @@
 {
   "video": "examples/data/roundtrip_4049556.mp4",
   "duration": 44.13,
+  "provenance": {"split": "constructed", "labels": "derived from the pexels_4049556 draft by mirroring it onto the constructed clip (forwards, 5 s of empty room, reversed)", "human_review": "pending"},
   "activity": [
     {"start": 0.0, "end": 5.4, "label": "LYING_IN_BED"},
     {"start": 5.4, "end": 13.8, "label": "SITTING_ON_BED"},
@@ -12,8 +13,5 @@
     {"start": 26.34, "end": 34.74, "label": "SITTING_ON_BED"},
     {"start": 34.74, "end": 44.13, "label": "LYING_IN_BED"}
   ],
-  "events": [
-    {"event": "bed_exit", "time": 13.8},
-    {"event": "return_to_bed", "time": 26.34}
-  ]
+  "events": [{"event": "bed_exit", "time": 13.8}, {"event": "return_to_bed", "time": 26.34}]
 }

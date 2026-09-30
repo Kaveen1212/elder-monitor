@@ -2,6 +2,7 @@
   "protocol": {
     "time_resolution_sec": 0.1,
     "event_tolerance_sec": 2.0,
+    "short_context_sec": 3.0,
     "event_time": "occurrence start (not confirmation)",
     "clips": 4,
     "analysed_sec": 97.25,
@@ -243,7 +244,8 @@
       "recall": 1.0,
       "false_per_hour": 0.0,
       "mean_abs_time_error_sec": 0.473,
-      "mean_confirmation_delay_sec": 2.798
+      "mean_confirmation_delay_sec": 2.798,
+      "missed_with_short_context": 0
     },
     "return_to_bed": {
       "tp": 1,
@@ -253,7 +255,8 @@
       "recall": 1.0,
       "false_per_hour": 0.0,
       "mean_abs_time_error_sec": 0.66,
-      "mean_confirmation_delay_sec": 9.8
+      "mean_confirmation_delay_sec": 9.8,
+      "missed_with_short_context": 0
     }
   },
   "duration": {

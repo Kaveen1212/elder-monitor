@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 
 from .calibrate import calibrate
 from .config import load_config
@@ -53,9 +54,25 @@ def cmd_calibrate(args):
 def cmd_serve(args):
     import uvicorn
 
-    from .server import create_app
+    from .server import LOCAL_ORIGINS, create_app
 
-    uvicorn.run(create_app(load_config(args.config), args.runs, args.frontend), host=args.host, port=args.port)
+    api_key = args.api_key or os.environ.get("ELDER_MONITOR_API_KEY")
+    if args.host not in ("127.0.0.1", "localhost", "::1") and not api_key:
+        print(f"WARNING: serving on {args.host} without an API key; anyone who can reach it can upload video and "
+              "watch the live analysis. Set --api-key or ELDER_MONITOR_API_KEY.")
+    app = create_app(load_config(args.config), args.runs, args.frontend, args.allow_origin or LOCAL_ORIGINS,
+                     args.max_upload_mb, api_key, args.retention_days)
+    uvicorn.run(app, host=args.host, port=args.port)
+
+
+def cmd_cleanup(args):
+    from .server import cleanup_runs
+
+    removed = cleanup_runs(args.runs, args.older_than_days, dry_run=args.dry_run)
+    verb = "would delete" if args.dry_run else "deleted"
+    print(f"{verb} {len(removed)} job folder(s) older than {args.older_than_days} days in {args.runs}")
+    for name in removed:
+        print(f"  {name}")
 
 
 def main(argv=None):
@@ -95,7 +112,18 @@ def main(argv=None):
     s.add_argument("--frontend", help="folder with the web frontend to serve at /")
     s.add_argument("--host", default="127.0.0.1")
     s.add_argument("--port", type=int, default=8000)
+    s.add_argument("--allow-origin", action="append", help="browser origin allowed to call the API (repeatable); "
+                   "default http://127.0.0.1:8000 and http://localhost:8000")
+    s.add_argument("--max-upload-mb", type=float, default=500)
+    s.add_argument("--api-key", help="require this key (X-API-Key header or ?api_key=); or set ELDER_MONITOR_API_KEY")
+    s.add_argument("--retention-days", type=float, help="delete finished upload jobs older than this (off by default)")
     s.set_defaults(func=cmd_serve)
+
+    k = sub.add_parser("cleanup", help="delete finished upload jobs older than a retention period")
+    k.add_argument("--runs", default="runs")
+    k.add_argument("--older-than-days", type=float, required=True)
+    k.add_argument("--dry-run", action="store_true", help="only list what would be deleted")
+    k.set_defaults(func=cmd_cleanup)
 
     args = parser.parse_args(argv)
     args.func(args)

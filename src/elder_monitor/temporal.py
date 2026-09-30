@@ -82,8 +82,8 @@ def box_motion(o, p, prev, recent, c):
     return p
 
 
-def propose_all(observations, cfg):
-    out, prev, recent = [], None, deque()
+def propose_all(observations, cfg, prev=None):
+    out, recent = [], deque()
     for o in observations:
         while recent and recent[0][0] < o.t - cfg["posture"]["box_context_sec"] - 1e-9:
             recent.popleft()
@@ -119,19 +119,20 @@ def merge(segments):
     return out
 
 
-def build_timeline(proposals, duration, cfg):
+def build_timeline(proposals, duration, cfg, start=0.0, state=UNKNOWN):
     """Commit a state once it persists for its dwell time and backdate the boundary to where it began.
 
     If known labels keep alternating so that none can settle, the latest one is committed after
     twice the longest dwell, so a flickering person is never left in the previous state. UNKNOWN straight after
-    WALKING (walked out of view) commits after left_view_sec, together with that walk.
+    WALKING (walked out of view) commits after left_view_sec, together with that walk. `start` and `state` resume
+    a window that begins inside a committed state.
     """
     tc = cfg["temporal"]
     dt = 1.0 / cfg["sampling"]["fps"]
     dwell = tc["dwell_sec"]
     patience = 2 * max(dwell.values())
     labels = smooth([p.label for p in proposals], tc["smooth_samples"])
-    segments, state, start, cand, cand_start, away = [], UNKNOWN, 0.0, None, 0.0, None
+    segments, cand, cand_start, away = [], None, start, None
     prev_lab = walk_from = walk_out = None
     tail = len(labels)
     while tail and labels[tail - 1] == UNKNOWN:

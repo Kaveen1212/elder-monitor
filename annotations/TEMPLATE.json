@@ -1,6 +1,7 @@
 {
   "video": "data/demo.mp4",
   "duration": "15:00",
+  "provenance": {"labels": "who or what drafted the labels, and how", "human_review": "pending"},
   "activity": [
     {"start": "00:00", "end": "04:32", "label": "LYING_IN_BED"},
     {"start": "04:32", "end": "05:08", "label": "SITTING_ON_BED"},

@@ -1,11 +1,11 @@
 {
-  "schema_version": "1.5",
+  "schema_version": "1.6",
   "code_version": "0.1.0",
   "mode": "offline",
   "video": "data\\pexels_8090730.mp4",
   "video_hash": "efce9ff312dee5be9861d84ce3a3e0d2799f2e2e007a9c95848079c0421539e1",
   "duration_sec": 15.31,
-  "config_hash": "7dc9c6e2b0257955",
+  "config_hash": "9b16cc29e8cf6f90",
   "pose_model": "yolo11n-pose.pt sha256:869e83fcdffd",
   "vlm_model": "Qwen/Qwen2.5-VL-3B-Instruct",
   "vlm_revision": "Qwen/Qwen2.5-VL-3B-Instruct@66285546d2b821cf421d4f5eb2576359d3770cd3",
@@ -13,12 +13,38 @@
   "vlm_calls": 6,
   "sampling_fps": 5,
   "samples": 77,
-  "perception_sec": 4.7,
-  "reused_observations": null,
-  "analysis_sec": 41.4,
-  "vlm_load_sec": 32.4,
-  "vlm_inference_sec": 8.4,
-  "total_runtime_sec": 46.1,
+  "perception_sec": 4.3,
+  "reused_observations": "outputs\\pexels_8090730\\observations.jsonl",
+  "perception": {
+    "created": "2026-09-30T12:53:15+00:00",
+    "source": {
+      "commit": "4a1a280432c49091afcd1b6cf37eed34af1a0a28",
+      "dirty": true,
+      "src_dirty": true
+    },
+    "versions": {
+      "python": "3.12.0",
+      "ultralytics": "8.4.21",
+      "torch": "2.5.1+cu121",
+      "transformers": "5.6.1",
+      "opencv-python": "4.13.0.92",
+      "numpy": "2.4.3",
+      "scipy": "1.17.1",
+      "lap": "0.5.13"
+    },
+    "pose_model": "yolo11n-pose.pt sha256:869e83fcdffd",
+    "perception_sec": 4.3,
+    "perception_hash": "a2de119c7ba8df00"
+  },
+  "source": {
+    "commit": "4a1a280432c49091afcd1b6cf37eed34af1a0a28",
+    "dirty": true,
+    "src_dirty": true
+  },
+  "analysis_sec": 20.2,
+  "vlm_load_sec": 11.9,
+  "vlm_inference_sec": 7.8,
+  "total_runtime_sec": 20.3,
   "platform": "Windows-11-10.0.26200-SP0",
   "versions": {
     "python": "3.12.0",
@@ -134,6 +160,7 @@
     "vlm": {
       "enabled": true,
       "model": "Qwen/Qwen2.5-VL-3B-Instruct",
+      "revision": "66285546d2b821cf421d4f5eb2576359d3770cd3",
       "max_calls": 60,
       "max_side": 448,
       "max_new_tokens": 64

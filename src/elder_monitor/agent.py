@@ -7,7 +7,8 @@ import cv2
 
 from .events import departure
 from .schemas import (
-    BED_EXIT, IN_BED_STATES, LYING_IN_BED, LYING_ON_FLOOR, SITTING_ON_BED, STANDING, UNKNOWN, Proposal, Verdict,
+    BED_EXIT, IN_BED_STATES, LYING_IN_BED, LYING_ON_FLOOR, LYING_STATES, SITTING_ON_BED, STANDING, UNKNOWN, Proposal,
+    Verdict,
 )
 from .temporal import smooth
 from .vlm import answer_state
@@ -21,12 +22,18 @@ def _step(action, window, finding):
 
 class ContextAgent:
     """Decides when a proposal needs more temporal or visual context, picks bounded tools to get it,
-    and hands the evidence back. The temporal engine and the bed-event FSM still commit."""
+    and hands the evidence back. The temporal engine and the bed-event FSM still commit.
+
+    `props` is what the activity timeline is built from, bridged gaps included. `evidence` is what each sample
+    itself shows: its own posture, an explicit re-read of an observed posture, or a VLM answer about that very
+    frame. Bridging a gap changes `props` only, so event timers never count inferred time."""
 
     def __init__(self, cfg, observations, proposals, duration, frames=None, scene=None, vlm_factory=None):
         self.cfg, self.a = cfg, cfg["agent"]
         self.obs, self.props = observations, list(proposals)
         self.rules = [p.label for p in proposals]
+        self.evidence = list(self.rules)
+        self.inspected = []
         self.times = [p.t for p in proposals]
         self.dt = 1.0 / cfg["sampling"]["fps"]
         self.duration = duration
@@ -138,9 +145,10 @@ class ContextAgent:
                 back = self._look(t0, steps, ahead=False)
                 if back and back["label"] == LYING_IN_BED:
                     label, why = LYING_IN_BED, "continues in-bed lying; body overlaps the bed outline"
+        seen = set(self.inspected) if why == "VLM support check" else set()
         for k, o in enumerate(self.obs[i:j], i):
             if label == LYING_ON_FLOOR or self._target_box(o) and (not o.visible or o.body_in_bed > 0):
-                self.props[k] = Proposal(self.times[k], label, 0.5, why, "agent")
+                self._relabel(k, label, 0.5, why, k in seen or self.rules[k] in LYING_STATES)
         self._log("LYING_OUTSIDE_BED", t0, t1, steps, label, why)
 
     def _resolve_upright_on_bed(self, i, j):
@@ -163,7 +171,7 @@ class ContextAgent:
             label, why = SITTING_ON_BED, "VLM: seated on the bed edge; the legs only look straight"
             for k in range(i, j):
                 if self.props[k].label in (STANDING, UNKNOWN) and self.obs[k].visible:
-                    self.props[k] = Proposal(self.times[k], SITTING_ON_BED, 0.45, why, "agent")
+                    self._relabel(k, SITTING_ON_BED, 0.45, why, k in self.inspected or self.rules[k] == STANDING)
         self._log("UPRIGHT_ON_BED_REGION", t0, t1, steps, label, why)
 
     def _sits_after(self, j):
@@ -185,20 +193,20 @@ class ContextAgent:
         last_seen = next((o for o in reversed(self.obs[:i]) if o.visible), None)
         still_detected = 2 * sum(o.bbox is not None and o.identity_ok for o in self.obs[i:j]) >= j - i
         left_view = last_seen is not None and last_seen.truncated and not last_seen.hip_in_bed and not still_detected
-        label, why, bridged = UNKNOWN, "", False
+        label, why, bridged, seen = UNKNOWN, "", False, set()
         if in_bed_both and occluded and not left_view and t1 - t0 <= self.a["max_bridge_sec"]:
             label, why, bridged = back["label"], "in bed before and after a short occlusion", True
         elif (in_bed_both or cause not in UNCONFIRMED) and not left_view:
             state = self._vlm_consensus(i, j, steps)
             if state and (not in_bed_both or state in IN_BED_STATES or state == LYING_ON_FLOOR):
-                label, why = state, "VLM check across the gap"
+                label, why, seen = state, "VLM check across the gap", set(self.inspected)
         if label == UNKNOWN:
             why = "resident left the camera view" if left_view else f"insufficient evidence ({cause})"
             steps.append(_step("abstain", (t0, t1), why))
         else:
             for k, o in enumerate(self.obs[i:j], i):
                 if bridged or self._target_box(o):
-                    self.props[k] = Proposal(self.times[k], label, 0.45, why, "agent")
+                    self._relabel(k, label, 0.45, why, k in seen)
         self._log("AMBIGUOUS_GAP", t0, t1, steps, label, why)
 
     def _look(self, t, steps, ahead, nearest=True):
@@ -227,11 +235,13 @@ class ContextAgent:
         """Ask about vlm_frames samples spread over the run where the resident is identified; all must agree."""
         n, window = self.a["vlm_frames"], (self.times[i], self.times[j - 1] + self.dt)
         ks = [k for k in range(i, j) if self._target_box(self.obs[k])]
+        self.inspected = []
         if len(ks) < n:
             if self.use_vlm and self.frames is not None:
                 steps.append(_step("inspect_target_crop", window, "skipped: resident not identified in enough samples"))
             return None
-        answers = self.inspect_frames([self.times[ks[(m + 1) * len(ks) // (n + 1)]] for m in range(n)])
+        picks = [ks[(m + 1) * len(ks) // (n + 1)] for m in range(n)]
+        answers = self.inspect_frames([self.times[k] for k in picks])
         if len(answers) < n:
             if self.use_vlm:
                 steps.append(_step("inspect_target_crop", window, "skipped: VLM unavailable or budget exhausted"))
@@ -239,6 +249,7 @@ class ContextAgent:
         states = [answer_state(a["answer"]) for a in answers]
         state = states[0] if states[0] and all(s == states[0] for s in states) else None
         steps.append(_step("inspect_target_crop", window, {"answers": answers, "state": state}))
+        self.inspected = picks if state else []
         return state
 
     def _load_vlm(self):
@@ -276,6 +287,12 @@ class ContextAgent:
         cv2.rectangle(crop, (int(target[0]) - x1, int(target[1]) - y1), (int(target[2]) - x1, int(target[3]) - y1),
                       (0, 255, 0), thick)
         return crop
+
+    def _relabel(self, k, label, confidence, why, observed):
+        """Change the timeline's proposal; the sample becomes evidence only when it was itself observed."""
+        self.props[k] = Proposal(self.times[k], label, confidence, why, "agent")
+        if observed:
+            self.evidence[k] = label
 
     def _runs(self, label, min_sec):
         """Runs of a smoothed label; runs of a known label separated only by short dropouts are joined."""

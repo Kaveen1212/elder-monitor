@@ -227,3 +227,14 @@ def test_config_is_validated_before_the_video_is_opened(tmp_path):
     with pytest.raises(ValueError, match="zero area"):
         analyze(tmp_path / "missing.mp4", cfg, tmp_path / "out")
     validate_config(valid())
+
+
+def test_missed_event_near_the_clip_end_is_also_reported_separately(tmp_path):
+    ann = tmp_path / "late.json"
+    ann.write_text(json.dumps({"duration": 21.6,
+                               "activity": [{"start": 0, "end": 20.9, "label": "SITTING_ON_BED"},
+                                            {"start": 20.9, "end": 21.6, "label": "STANDING"}],
+                               "events": [{"event": "bed_exit", "time": 20.9}]}))
+    write_prediction(tmp_path / "pred", [(0, 21.6, SITTING_ON_BED)], [], 21.6)
+    ex = evaluate([str(tmp_path / "pred")], [str(ann)], str(tmp_path / "eval"))["events"]["bed_exit"]
+    assert (ex["tp"], ex["fn"], ex["missed_with_short_context"]) == (0, 1, 1)

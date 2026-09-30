@@ -1,3 +1,9 @@
-{"video": "examples/data/pexels_8862331.mp4", "duration": 35.4, "activity": [
+{
+  "video": "examples/data/pexels_8862331.mp4",
+  "duration": 35.4,
+  "provenance": {"split": "held-out", "labels": "AI-assisted draft made blind, before the system ran on the clip: one AI annotator (Claude) labelled sampled frames, a second AI annotator made its own timeline first and then checked every boundary", "human_review": "pending"},
+  "activity": [
     {"start": 0.0, "end": 35.4, "label": "SITTING_ON_BED"}
-  ], "events": []}
+  ],
+  "events": []
+}

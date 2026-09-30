@@ -1,4 +1,10 @@
-{"video": "examples/data/pexels_8591515.mp4", "duration": 13.68, "activity": [
+{
+  "video": "examples/data/pexels_8591515.mp4",
+  "duration": 13.68,
+  "provenance": {"split": "held-out", "labels": "AI-assisted draft made blind, before the system ran on the clip: one AI annotator (Claude) labelled sampled frames, a second AI annotator made its own timeline first and then checked every boundary", "human_review": "pending"},
+  "activity": [
     {"start": 0.0, "end": 7.9, "label": "STANDING"},
     {"start": 7.9, "end": 13.68, "label": "LYING_IN_BED"}
-  ], "events": [{"event": "return_to_bed", "time": 7.9}]}
+  ],
+  "events": [{"event": "return_to_bed", "time": 7.9}]
+}

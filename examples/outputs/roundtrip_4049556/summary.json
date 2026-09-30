@@ -16,6 +16,18 @@
   "total_out_of_bed_sec": 5.0,
   "total_unknown_bed_sec": 9.6,
   "longest_out_of_bed_period_sec": 2.8,
+  "longest_away_episode_sec": 13.8,
+  "away_episodes": [
+    {
+      "episode_id": 1,
+      "start_sec": 13.2,
+      "end_sec": 27.0,
+      "elapsed_sec": 13.8,
+      "observed_out_of_bed_sec": 5.0,
+      "unknown_sec": 8.8,
+      "ended_by": "return_to_bed"
+    }
+  ],
   "final_state": "lying_in_bed",
   "final_bed_status": "IN_BED",
   "final_decision": "NORMAL",

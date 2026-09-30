@@ -107,6 +107,8 @@ def validate_config(cfg):
         raise ValueError("posture thresholds must be positive numbers")
     if not p["lying_exit_deg"] <= p["lying_enter_deg"] <= 90:
         raise ValueError("posture needs lying_exit_deg <= lying_enter_deg <= 90")
+    if not isinstance(cfg["vlm"].get("revision") or "", str):
+        raise ValueError("vlm.revision must be null or a Hugging Face commit / tag string")
     if cfg["events"]["return_rule"] not in ("lying", "sitting"):
         raise ValueError("events.return_rule must be 'lying' or 'sitting'")
     if not set(cfg["policy"]["event_decision"].values()) <= {"NORMAL", "MONITOR", "ALERT"}:

@@ -69,10 +69,12 @@ def same_body(a, b, kp_conf):
 class TargetSelector:
     """Keeps the monitored resident separate from temporary tracker IDs.
 
-    Other confident people tracked alongside the resident are remembered and are not re-attached as the resident;
-    duplicate boxes on the resident's own body are not, so they can still pass re-association. A box that keeps the
-    resident's track ID must still be within reach of the last position and look like the resident, so an ID switch
-    becomes identity uncertainty. These are heuristics: similar-looking people who swap IDs can still fool them.
+    Other confident people tracked alongside the resident are remembered with their appearance, and their IDs are not
+    re-attached as the resident. A tracker can later hand such an ID to the resident (it re-activates a lost track on
+    them), so the ID is usable again only for a box that looks clearly more like the resident than like the person last
+    seen with it. Duplicate boxes on the resident's own body are not remembered. A box that keeps the resident's track
+    ID must still be within reach of the last position and look like the resident, so an ID switch becomes identity
+    uncertainty. Colour histograms are weak evidence: similar-looking people who swap IDs can still be confused.
     """
 
     def __init__(self, cfg, scene):
@@ -85,7 +87,7 @@ class TargetSelector:
         self.max_jump, self.jump_per_sec = i["max_jump"] * scene.height, i["jump_per_sec"] * scene.height
         self.kp_conf = cfg["vision"]["kp_conf"]
         self.selected, self.track_id, self.hist, self.last_pos, self.last_t = False, None, None, None, None
-        self.others = set()
+        self.others = {}
         self.last_in_bed = None
 
     def select(self, t, frame, persons):
@@ -104,7 +106,7 @@ class TargetSelector:
                     break
                 self._adopt(t, frame, p, persons)
                 return p, True, "tracked"
-        candidates = [p for p in persons if p.track_id not in self.others and p.conf >= self.min_conf]
+        candidates = [p for p in persons if self._usable(frame, p)]
         if not candidates:
             if not persons:
                 return None, True, "not_detected"
@@ -137,6 +139,19 @@ class TargetSelector:
         sim = self._similarity(frame, p)
         return self._reachable(t, p) and (sim is None or sim >= self.track_min_sim)
 
+    def _usable(self, frame, p):
+        """A confident box whose ID was not last seen on another person, or now clearly looks like the resident
+        rather than that person."""
+        if p.conf < self.min_conf:
+            return False
+        if p.track_id not in self.others:
+            return True
+        h, other = appearance(frame, p.bbox), self.others[p.track_id]
+        if h is None or self.hist is None or other is None:
+            return False
+        resident = cv2.compareHist(self.hist, h, cv2.HISTCMP_CORREL)
+        return resident - cv2.compareHist(other, h, cv2.HISTCMP_CORREL) >= self.margin
+
     def _reassociate(self, t, frame, persons, candidates):
         scored = []
         for p in candidates:
@@ -163,7 +178,9 @@ class TargetSelector:
             self.hist = h if self.hist is None else 0.9 * self.hist + 0.1 * h
         if p.track_id is not None:
             self.track_id = p.track_id
-        self.others |= {q.track_id for q in persons if q is not p and q.track_id is not None and q.conf >= self.min_conf
-                        and not same_body(q, p, self.kp_conf)} - {self.track_id}
+        for q in persons:
+            if q is not p and q.track_id is not None and q.conf >= self.min_conf and not same_body(q, p, self.kp_conf):
+                self.others[q.track_id] = appearance(frame, q.bbox)
+        self.others.pop(self.track_id, None)
         self.selected, self.last_pos, self.last_t = True, p.center, t
         self.last_in_bed = bool(self.scene.in_bed(self._anchor(p)))

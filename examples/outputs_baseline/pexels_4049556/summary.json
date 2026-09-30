@@ -16,6 +16,18 @@
   "total_out_of_bed_sec": 5.2,
   "total_unknown_bed_sec": 2.6,
   "longest_out_of_bed_period_sec": 2.8,
+  "longest_away_episode_sec": 4.4,
+  "away_episodes": [
+    {
+      "episode_id": 1,
+      "start_sec": 13.2,
+      "end_sec": 17.57,
+      "elapsed_sec": 4.4,
+      "observed_out_of_bed_sec": 2.8,
+      "unknown_sec": 1.6,
+      "ended_by": "end_of_recording"
+    }
+  ],
   "final_state": "unknown",
   "final_bed_status": "UNKNOWN",
   "final_decision": "MONITOR",

@@ -16,6 +16,18 @@
   "total_out_of_bed_sec": 3.1,
   "total_unknown_bed_sec": 0.4,
   "longest_out_of_bed_period_sec": 3.1,
+  "longest_away_episode_sec": 3.1,
+  "away_episodes": [
+    {
+      "episode_id": 1,
+      "start_sec": 4.59,
+      "end_sec": 7.67,
+      "elapsed_sec": 3.1,
+      "observed_out_of_bed_sec": 3.1,
+      "unknown_sec": 0.0,
+      "ended_by": "end_of_recording"
+    }
+  ],
   "final_state": "walking",
   "final_bed_status": "OUT_OF_BED",
   "final_decision": "NORMAL",

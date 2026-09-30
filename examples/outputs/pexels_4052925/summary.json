@@ -16,6 +16,8 @@
   "total_out_of_bed_sec": 0.0,
   "total_unknown_bed_sec": 0.0,
   "longest_out_of_bed_period_sec": 0.0,
+  "longest_away_episode_sec": 0.0,
+  "away_episodes": [],
   "final_state": "sitting_on_bed",
   "final_bed_status": "IN_BED",
   "final_decision": "NORMAL",

@@ -3,7 +3,7 @@ import pytest
 
 from elder_monitor.live import LiveSession, chat_messages
 from elder_monitor.pipeline import run_analysis
-from elder_monitor.schemas import BED_EXIT, UNKNOWN
+from elder_monitor.schemas import BED_EXIT, UNKNOWN, Observation
 
 from conftest import script
 from test_units import LYING_ON_BED, STANDING_BESIDE, person
@@ -85,3 +85,37 @@ def test_live_evidence_is_observed_time_at_any_frame_rate(cfg):
     assert delays[5] == delays[10] == delays[20] == [pytest.approx(1.8)]
     assert not delays[2.5] and session.result["view"]["missing_frame_share"] == pytest.approx(0.5, abs=0.02)
     assert session.result["view"]["degraded"] and session.push(frame, 15.6)["skipped"]
+
+
+def test_long_session_keeps_a_bounded_window_and_matches_offline(cfg):
+    """Checkpoints fall inside lying, walking (out-of-bed timer running), an absence and edge-sitting (edge timer
+    running); every timeline, event, rule episode and total still matches one offline run over the whole session."""
+    cfg["policy"].update(max_out_of_bed_sec=60, edge_sit_sec=40)
+    cfg["agent"].update(lookback_sec=2.0, lookahead_sec=2.0, max_rounds=1)
+    cfg["events"]["lookahead_sec"] = 2.0
+    edge, gone, walk_near = {"pose": "sitting", "edge": True}, {"visible": False}, {"pose": "walking", "where": "near"}
+    obs, T = script((60, LIE), (5, SIT), (2, STAND_NEAR), (90, WALK_AWAY), (70, gone), (3, walk_near), (3, SIT),
+                    (60, LIE), (100, edge), (30, LIE), (1, {"identity_ok": False}), (30, LIE))
+    offline = run_analysis([Observation(**vars(o)) for o in obs], T, cfg)
+    session, sent, longest = LiveSession(cfg, tracker=object()), [], 0
+    for o in obs:
+        session.obs.append(Observation(**vars(o)))
+        sent += session.update()["messages"]
+        longest = max(longest, len(session.obs))
+    live = session.result
+
+    def spans(segments):
+        return [(s.label, round(s.start, 4), round(s.end, 4)) for s in segments]
+
+    assert session.checkpoints >= 8 and longest * session.step < session.window_sec + 2 * session.settled
+    for key in ("activity", "bed", "decisions"):
+        assert spans(live[key]) == spans(offline[key])
+    assert [(e.event, e.episode_id, e.start_sec, e.confirmed_sec) for e in live["events"]] == \
+        [(e.event, e.episode_id, e.start_sec, e.confirmed_sec) for e in offline["events"]]
+    assert [(a["rule"], round(a["start_sec"], 4), round(a["end_sec"], 4)) for a in live["alerts"]] == \
+        [(a["rule"], round(a["start_sec"], 4), round(a["end_sec"], 4)) for a in offline["alerts"]]
+    assert {k: v for k, v in live["summary"].items() if k != "human"} == \
+        {k: v for k, v in offline["summary"].items() if k != "human"}
+    keys = [m["key"] for m in sent if m["kind"] in ("event", "alert")]
+    assert keys.count("event:bed_exit") == 1 and keys.count("event:return_to_bed") == 1
+    assert keys.count("alert:PROLONGED_OUT_OF_BED") == 1 and keys.count("alert:EDGE_SIT_LONG") == 1

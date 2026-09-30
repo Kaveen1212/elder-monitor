@@ -9,7 +9,9 @@ is the camera placement). For each case you get:
 - the numbers before and after;
 - what is still open.
 
-Case 5 lists failures fixed earlier during development on the same footage.
+Case 5 lists failures fixed earlier during development on the same footage. Between case 4 and case 5 are three
+code reviews of the fixes ("Review of the fixes", "Review of commit `e1c709a`", "Review of commit `4a1a280`"),
+each with the problems found, the fixes and their tests.
 
 **About the numbers.** "Before" is the previous code, "after" the current code, both on the same cached keypoints
 (`figures/before_fix.json` keeps the earlier timelines). They are measured on the same four labelled development clips
@@ -396,6 +398,34 @@ What changed on the example clips:
   time (11.5 s), and the old code had let the VLM relabel that unidentified time as lying. In `8539659` the resident
   is not detected once he lies down, and the VLM's three answers about the outlined bed did not agree, so the gap and
   the return stay unresolved. These are the numbers to quote; `examples/README.md` has the per-clip table.
+
+---
+
+## Review of commit `4a1a280`
+
+A review of commit `4a1a280` reported the problems below. Each code problem was reproduced first. Of the new tests in
+`tests/test_evidence.py`, `tests/test_identity.py` and `tests/test_summary.py`, 9 of 12 fail on `4a1a280`. The other
+3 check behaviour that must not change: the no-agent return case, and keeping a caregiver out. The cache, API,
+annotation and short-context tests exercise features that did not exist before.
+
+| Problem found | Fix | Tests |
+|---|---|---|
+| Event timers counted time the timeline had only inferred. Walking 3 s, sitting 3 s, lying 1.6 s, 10 s of missing frames, lying 3 s: with the agent the return was confirmed at 7.8 s, inside the gap the agent had bridged as lying. Lying 10 s, then six times standing 5 s and 1 s of missing frames: the 30 s exit dwell fired at 39.8 s after only 25 observed seconds. | The analysis keeps one evidence label per sample: its own rule proposal, an explicit agent re-read of an observed posture, or a VLM answer about that very frame. Bridging a gap changes only the timeline. The state machine takes its modes from the timeline but counts both timers on evidence, so missing frames and smoothed labels never add time and they restart a return's count. The two sequences now confirm at 19.4 s and 44.8 s. | `tests/test_evidence.py` |
+| Once a caregiver's track ID was remembered, it was excluded for good. When the tracker later handed that ID to the resident, they stayed `identity_uncertain`. | Other people are remembered with their appearance. Their old ID is usable again only for a box that looks clearly more like the resident than like the person last seen with it, and it still has to pass the normal re-association checks. | `tests/test_identity.py` (old caregiver ID, caregiver given the resident's ID, IDs swapped with both in view, ambiguous appearance stays `UNKNOWN`) |
+| The observation cache checked the model *file name*, so different weights under the same name reused old observations. | The cache key hashes the weights and tracker config contents, the perception source files and the libraries that compute keypoints and tracks, with the perception settings. A cache without that provenance is never reused. The manifest's `perception` block names the run that made reused observations. | `tests/test_cache.py` |
+| Four held-out events were missed and needed an honest account. | Each was checked frame by frame ([README](README.md#why-four-held-out-events-were-missed)). The earlier write-up of `7938959` ("identity lost while the caregiver held her") was wrong: the selector stayed on her, and she was lost at the frame border. Evaluation now also counts misses labelled less than 3 s before the clip ends, in addition to the strict counts. | `test_missed_event_near_the_clip_end_is_also_reported_separately` |
+| The labels' provenance and review status were not recorded with them. | Each label file carries `provenance` (how it was drafted, `human_review: pending`). [annotations/REVIEW.md](annotations/REVIEW.md) is the review checklist and log, with every clip pending human review. | `tests/test_annotations.py` (well-formedness and consistency, not correctness) |
+| The live session re-ran the analysis over the whole session on every frame. | A bounded window that resumes from quiet checkpoints, carrying the state machine, policy timers and posture hysteresis. A scripted session with 11 checkpoints gives exactly the offline result. Per-frame analysis stays about 6 ms at 2 hours, against 564 ms before. | `test_long_session_keeps_a_bounded_window_and_matches_offline` |
+| `longest_out_of_bed_period_sec` breaks at `UNKNOWN`, so it understates an absence that goes out of view. | Kept as it is. `away_episodes` and `longest_away_episode_sec` measure from exit to return, split into observed out-of-bed and unknown time. | `tests/test_summary.py` |
+| The API allowed any origin, had no size limit, no access control and no retention. Malformed WebSocket messages closed the connection. | Configurable origins, upload limit, optional API key, opt-in retention and a `cleanup` command limited to server-created finished jobs, and readable errors. | `tests/test_api.py` |
+| The installation and the VLM were not reproducible. | `constraints.txt` from a fresh install that passes the tests. Model and processor pinned to revision `66285546d2b821cf421d4f5eb2576359d3770cd3`. Manifests record the git commit and dirty flags. | (install check, see the README) |
+
+What changed on the example clips, all from a fresh run of the current code:
+- **Development clips.** The timelines and events of all seven clips are identical, with and without the agent. The
+  observations of the four labelled clips match the stored test fixtures exactly.
+- **Held-out clips, run once.** All metrics are identical to `4a1a280`. One confirmation time moved: the return in
+  `pexels_8591515` still starts at 8.6 s, but is now confirmed at 12.4 s instead of 10.4 s. The resident is not
+  detected at 8.4–8.6 s and 10.0–10.4 s, and those samples no longer count as lying.
 
 ---
 

@@ -11,7 +11,7 @@ from .schemas import (
 )
 from .temporal import durations, labels_at
 
-SCHEMA_VERSION = "1.5"
+SCHEMA_VERSION = "1.6"
 
 
 def _hms(sec):
@@ -39,12 +39,35 @@ def timeline_text(segments):
     return "\n".join(f"{fmt_clock(s.start)} – {fmt_clock(s.end)}  {s.label}" for s in segments)
 
 
+def away_episodes(result):
+    """Each confirmed bed exit until the start of its return, or the end of the recording. The elapsed time is split
+    into time observed out of bed and UNKNOWN time; any rest was seen back on the bed before the return confirmed."""
+    returns = {e.episode_id: e for e in result["events"] if e.event == RETURN_TO_BED}
+    out = []
+    for e in result["events"]:
+        if e.event != BED_EXIT:
+            continue
+        ret = returns.get(e.episode_id)
+        end = ret.start_sec if ret else result["duration"]
+
+        def seconds(label):
+            return sum(max(0.0, min(s.end, end) - max(s.start, e.start_sec)) for s in result["bed"] if s.label == label)
+
+        out.append({"episode_id": e.episode_id, "start_sec": round(e.start_sec, 2), "end_sec": round(end, 2),
+                    "elapsed_sec": round(end - e.start_sec, 1), "observed_out_of_bed_sec": round(seconds(OUT_OF_BED), 1),
+                    "unknown_sec": round(seconds(UNKNOWN), 1), "ended_by": RETURN_TO_BED if ret else "end_of_recording"})
+    return out
+
+
 def summarize(result):
+    """Totals over the committed timelines. longest_out_of_bed_period_sec is the longest continuous OUT_OF_BED span, so
+    it breaks at UNKNOWN; away_episodes measure from a confirmed exit to the return, unknown time included."""
     T = result["duration"]
     act = durations(result["activity"], ACTIVITY_STATES)
     bed = durations(result["bed"], BED_STATES)
     exits = sum(e.event == BED_EXIT for e in result["events"])
     out_periods = [s.duration for s in result["bed"] if s.label == OUT_OF_BED]
+    away = away_episodes(result)
     return {
         "observation_duration_sec": round(T, 1),
         "activity_duration_sec": {k.lower(): round(v, 1) for k, v in act.items()},
@@ -54,6 +77,8 @@ def summarize(result):
         "total_out_of_bed_sec": round(bed[OUT_OF_BED], 1),
         "total_unknown_bed_sec": round(bed[UNKNOWN], 1),
         "longest_out_of_bed_period_sec": round(max(out_periods, default=0.0), 1),
+        "longest_away_episode_sec": max((a["elapsed_sec"] for a in away), default=0.0),
+        "away_episodes": away,
         "final_state": result["activity"][-1].label.lower() if result["activity"] else UNKNOWN.lower(),
         "final_bed_status": result["bed"][-1].label if result["bed"] else UNKNOWN,
         "final_decision": result["decisions"][-1].label if result["decisions"] else NORMAL,
@@ -125,9 +150,9 @@ def write_outputs(out_dir, result, manifest):
             f.write(json.dumps(rec) + "\n")
     with open(out / "proposals.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["t", "label", "confidence", "reason", "source"])
-        for p in result["proposals"]:
-            w.writerow([round(p.t, 2), p.label, p.confidence, p.reason, p.source])
+        w.writerow(["t", "label", "confidence", "reason", "source", "evidence"])
+        for p, ev in zip(result["proposals"], result["evidence"]):
+            w.writerow([round(p.t, 2), p.label, p.confidence, p.reason, p.source, ev])
     (out / "run_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
 

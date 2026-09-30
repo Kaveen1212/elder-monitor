@@ -21,12 +21,15 @@ class AlertPolicy:
         self.c = cfg["policy"]
         self.dt = 1.0 / cfg["sampling"]["fps"]
 
-    def run(self, times, activity, bed, observations, fsm, duration):
-        c, dt = self.c, self.dt
-        out_since = left_at = sit_since = None
-        recent = deque()
-        per_sample = []
+    def run(self, times, activity, bed, observations, fsm, duration, start=0.0, init=None, snapshot_at=None):
+        """Decision segments, rule episodes, and the timers at `snapshot_at` (None if not asked).
+        `init` resumes the timers of an earlier window."""
+        c, dt, init = self.c, self.dt, init or {}
+        out_since, left_at, sit_since = init.get("out_since"), init.get("left_at"), init.get("sit_since")
+        recent, per_sample, snapshot = deque(init.get("recent", ())), [], None
         for t, act, st, o in zip(times, activity, bed, observations):
+            if snapshot_at is not None and snapshot is None and t >= snapshot_at - 1e-9:
+                snapshot = {"out_since": out_since, "left_at": left_at, "sit_since": sit_since, "recent": list(recent)}
             out_since = (t if out_since is None else out_since) if st == OUT_OF_BED else None
             if st == IN_BED:
                 left_at = None
@@ -58,16 +61,16 @@ class AlertPolicy:
             decision = max((RULES[r] for r in rules), key=DECISION_RANK.get, default=NORMAL)
             per_sample.append((t, decision, sorted(rules)))
         ends = [t for t, _, _ in per_sample[1:]] + [duration]
-        return self._segments(per_sample, ends), self._episodes(per_sample, ends)
+        return self._segments(per_sample, ends, start), self._episodes(per_sample, ends), snapshot
 
     @staticmethod
-    def _segments(per_sample, ends):
+    def _segments(per_sample, ends, start):
         out = []
         for k, ((t, decision, rules), end) in enumerate(zip(per_sample, ends)):
             if out and out[-1].label == decision and out[-1].reasons == rules:
                 out[-1].end = end
             else:
-                out.append(Segment(0.0 if k == 0 else t, end, decision, reasons=rules))
+                out.append(Segment(start if k == 0 else t, end, decision, reasons=rules))
         return out
 
     @staticmethod

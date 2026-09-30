@@ -16,6 +16,8 @@
   "total_out_of_bed_sec": 0.0,
   "total_unknown_bed_sec": 35.4,
   "longest_out_of_bed_period_sec": 0.0,
+  "longest_away_episode_sec": 0.0,
+  "away_episodes": [],
   "final_state": "unknown",
   "final_bed_status": "UNKNOWN",
   "final_decision": "MONITOR",

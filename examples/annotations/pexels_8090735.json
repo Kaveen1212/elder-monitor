@@ -1,6 +1,7 @@
 {
   "video": "examples/data/pexels_8090735.mp4",
   "duration": 7.67,
+  "provenance": {"split": "development", "labels": "AI-assisted draft: an AI assistant (Claude) labelled sampled frames while the system was being built; boundaries are approximate (about +-0.3 s)", "human_review": "pending"},
   "activity": [
     {"start": 0.0, "end": 4.3, "label": "SITTING_ON_BED"},
     {"start": 4.3, "end": 4.6, "label": "STANDING"},

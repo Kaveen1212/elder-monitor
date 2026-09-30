@@ -1,11 +1,11 @@
 {
-  "schema_version": "1.5",
+  "schema_version": "1.6",
   "code_version": "0.1.0",
   "mode": "offline",
   "video": "data\\pexels_5983705.mp4",
   "video_hash": "c4ba8b9dae9f4e6e1bc4e31367e4163d35371f5bf5d26a2fa63a3c8b2f578896",
   "duration_sec": 23.08,
-  "config_hash": "8f11f6018c4c5c18",
+  "config_hash": "c122716b9c731afe",
   "pose_model": "yolo11n-pose.pt sha256:869e83fcdffd",
   "vlm_model": "Qwen/Qwen2.5-VL-3B-Instruct",
   "vlm_revision": null,
@@ -13,12 +13,38 @@
   "vlm_calls": 0,
   "sampling_fps": 5,
   "samples": 116,
-  "perception_sec": 5.4,
+  "perception_sec": 4.8,
   "reused_observations": null,
+  "perception": {
+    "created": "2026-09-30T13:06:22+00:00",
+    "source": {
+      "commit": "4a1a280432c49091afcd1b6cf37eed34af1a0a28",
+      "dirty": true,
+      "src_dirty": true
+    },
+    "versions": {
+      "python": "3.12.0",
+      "ultralytics": "8.4.21",
+      "torch": "2.5.1+cu121",
+      "transformers": "5.6.1",
+      "opencv-python": "4.13.0.92",
+      "numpy": "2.4.3",
+      "scipy": "1.17.1",
+      "lap": "0.5.13"
+    },
+    "pose_model": "yolo11n-pose.pt sha256:869e83fcdffd",
+    "perception_sec": 4.8,
+    "perception_hash": "48d3ccf561d2f3dd"
+  },
+  "source": {
+    "commit": "4a1a280432c49091afcd1b6cf37eed34af1a0a28",
+    "dirty": true,
+    "src_dirty": true
+  },
   "analysis_sec": 0.0,
   "vlm_load_sec": 0.0,
   "vlm_inference_sec": 0.0,
-  "total_runtime_sec": 5.4,
+  "total_runtime_sec": 4.9,
   "platform": "Windows-11-10.0.26200-SP0",
   "versions": {
     "python": "3.12.0",
@@ -134,6 +160,7 @@
     "vlm": {
       "enabled": true,
       "model": "Qwen/Qwen2.5-VL-3B-Instruct",
+      "revision": "66285546d2b821cf421d4f5eb2576359d3770cd3",
       "max_calls": 60,
       "max_side": 448,
       "max_new_tokens": 64

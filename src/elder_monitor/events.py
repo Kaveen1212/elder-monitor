@@ -1,7 +1,9 @@
 import math
 from bisect import bisect_left, bisect_right
 
-from .schemas import BED_EXIT, IN_BED, LYING_IN_BED, OUT_OF_BED, RETURN_TO_BED, UNKNOWN, BedEvent, Verdict
+from .schemas import (
+    BED_EXIT, IN_BED, LYING_IN_BED, OUT_OF_BED, RETURN_TO_BED, UNKNOWN, BedEvent, Verdict, bed_status,
+)
 
 
 def spans(times, dt):
@@ -63,29 +65,43 @@ def guard_verifier(observations, cfg):
     return verify
 
 
-def detect_bed_events(times, activity, bed, confidence, bed_segments, duration, cfg, verify):
+def detect_bed_events(times, activity, bed, evidence, confidence, bed_segments, duration, cfg, verify, init=None,
+                      snapshot_at=None):
     """UNINITIALIZED -> IN_BED_BASELINE -> EXIT_PENDING -> AWAY_EPISODE -> RETURN_PENDING -> IN_BED_BASELINE.
 
-    A pending exit falls back to the baseline if the resident is back in bed before departing;
-    a pending return falls back to AWAY_EPISODE if they leave before lying down. If they get back into bed
-    without having departed in between, the return keeps its first re-occupation as its start. The return is
-    confirmed only after return_persist_sec of continuous supported evidence (lying, or any in-bed state with
-    return_rule sitting); UNKNOWN or another state restarts that evidence but not the return's start time."""
-    ec = cfg["events"]
+    Modes follow the committed timelines (`activity`, `bed`). Timers follow `evidence`: the state each sample itself
+    supports, UNKNOWN where nothing was observed. So the exit dwell counts observed out-of-bed samples, and a return
+    needs return_persist_sec of lying (or, with return_rule sitting, any in-bed state) seen without a break. A bridged
+    gap, a smoothed label or a missing frame never adds time, and each restarts the return count; the return keeps
+    its start time. A pending exit falls back to the baseline if the resident is back in bed before departing; a
+    pending return falls back to AWAY_EPISODE if they leave before lying down. If they get back into bed without
+    having departed in between, the return keeps its first re-occupation as its start.
+
+    `init` resumes from a quiet state (mode, episode, last_in, last_out) and `snapshot_at` reports that state at the
+    first sample at or after a given time; the live session uses both to analyse a bounded window."""
+    ec, init = cfg["events"], init or {}
     in_bed_starts = [s.start for s in bed_segments if s.label == IN_BED]
-    mode, episode = "UNINITIALIZED", 0
-    events, rejected, unresolved, pending_spans = [], [], [], []
-    last_in = last_out = pending = recheck = ret_start = ret_from = held = None
+    mode, episode = init.get("mode", "UNINITIALIZED"), init.get("episode", 0)
+    last_in, last_out = init.get("last_in"), init.get("last_out")
+    events, rejected, unresolved, pending_spans, snapshot = [], [], [], [], None
+    pending = recheck = ret_start = ret_from = held = None
     seen_out, checked, held_out, ret_evidence, support = 0.0, [], 0.0, [], 0.0
 
     def next_in_bed(t):
         i = bisect_right(in_bed_starts, t)
         return in_bed_starts[i] if i < len(in_bed_starts) else duration
 
-    def supports_return(act, st):
-        return st == IN_BED and (ec["return_rule"] == "sitting" or act == LYING_IN_BED)
+    def supports_return(act, st, ev):
+        if st != IN_BED or bed_status(ev) != IN_BED:
+            return False
+        return ec["return_rule"] == "sitting" or act == ev == LYING_IN_BED
 
-    for i, (t, act, st, dt) in enumerate(zip(times, activity, bed, spans(times, 1.0 / cfg["sampling"]["fps"]))):
+    steps = spans(times, 1.0 / cfg["sampling"]["fps"])
+    for i, (t, act, st, ev, dt) in enumerate(zip(times, activity, bed, evidence, steps)):
+        if snapshot_at is not None and snapshot is None and t >= snapshot_at - 1e-9:
+            snapshot = {"mode": mode, "episode": episode, "last_in": last_in, "last_out": last_out,
+                        "quiet": mode in ("UNINITIALIZED", "IN_BED_BASELINE", "AWAY_EPISODE") and held is None}
+        seen = bed_status(ev)
         if st == IN_BED:
             last_in = act
         elif st == OUT_OF_BED:
@@ -107,12 +123,12 @@ def detect_bed_events(times, activity, bed, confidence, bed_segments, duration, 
                 pending_spans.append((pending, t))
                 mode = "IN_BED_BASELINE"
                 continue
-            seen_out += dt if st == OUT_OF_BED else 0.0
+            seen_out += dt if seen == OUT_OF_BED else 0.0
             v = None
             if t >= recheck:
                 v = verify(pending, t, next_in_bed(t))
                 recheck, checked = max(v.until, t + 1e-6), v.evidence
-            if (v is None or v.time is None) and st == OUT_OF_BED and seen_out >= ec["exit_dwell_sec"] - 1e-9:
+            if (v is None or v.time is None) and seen == OUT_OF_BED and seen_out >= ec["exit_dwell_sec"] - 1e-9:
                 dwell = {"action": "dwell", "window": [round(pending, 2), round(t, 2)],
                          "finding": f"observed out of bed for {ec['exit_dwell_sec']}s without returning"}
                 v = Verdict(t, t, confidence[i] * 0.8, [*checked, dwell])
@@ -130,7 +146,7 @@ def detect_bed_events(times, activity, bed, confidence, bed_segments, duration, 
             held_out += dt if held and st != IN_BED else 0.0
             if st == IN_BED:
                 mode, ret_start, ret_from, ret_evidence = "RETURN_PENDING", t, last_out, []
-                support = dt if supports_return(act, st) else 0.0
+                support = dt if supports_return(act, st, ev) else 0.0
                 if held:
                     v = verify(held[2], t, t)
                     if v.time is None and held_out < ec["exit_dwell_sec"] - 1e-9:
@@ -144,7 +160,7 @@ def detect_bed_events(times, activity, bed, confidence, bed_segments, duration, 
             if st == OUT_OF_BED:
                 mode, held, held_out = "AWAY_EPISODE", (ret_start, ret_from, t), dt
             else:
-                support = support + dt if supports_return(act, st) else 0.0
+                support = support + dt if supports_return(act, st, ev) else 0.0
                 if support >= ec["return_persist_sec"] - 1e-9:
                     j = bisect_left(times, ret_start)
                     conf = sum(confidence[j:i + 1]) / (i + 1 - j)
@@ -158,4 +174,5 @@ def detect_bed_events(times, activity, bed, confidence, bed_segments, duration, 
         pending_spans.append((pending, duration))
     if mode == "RETURN_PENDING":
         unresolved.append({"event": RETURN_TO_BED, "start_sec": ret_start, "reason": "not_sustained_before_end"})
-    return {"events": events, "rejected": rejected, "unresolved": unresolved, "pending_spans": pending_spans}
+    return {"events": events, "rejected": rejected, "unresolved": unresolved, "pending_spans": pending_spans,
+            "snapshot": snapshot}

@@ -127,11 +127,11 @@ def measure(t, frame_idx, person, scene, cfg):
     return obs
 
 
-def add_speed(observations, window):
-    """Anchor displacement over ~window seconds, in torso lengths per second."""
+def add_speed(observations, window, start=0):
+    """Anchor displacement over ~window seconds, in torso lengths per second, for the samples from `start` on."""
     j = 0
     for i, o in enumerate(observations):
-        if not o.visible:
+        if i < start or not o.visible:
             continue
         while observations[j].t < o.t - window:
             j += 1
