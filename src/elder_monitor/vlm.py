@@ -10,8 +10,9 @@ from .schemas import (
 POSTURES = {"lying", "sitting", "standing", "walking", "unclear"}
 SUPPORTS = {"bed", "floor", "chair", "none", "unclear"}
 PROMPT = (
-    "Is a real person visible in this indoor camera image? If none is clearly visible, set person_visible to false. "
-    '"support" is the surface directly under the person\'s body. '
+    "Look only inside the green box in this indoor camera image and ignore anyone outside it. "
+    "Is a real person visible inside the box? If none is clearly visible, set person_visible to false. "
+    '"support" is the surface directly under that person\'s body. '
     'Reply with JSON only: {"person_visible": true or false, '
     '"posture": "lying" | "sitting" | "standing" | "walking" | "unclear", '
     '"support": "bed" | "floor" | "chair" | "none" | "unclear"}'
@@ -56,6 +57,7 @@ class QwenVLM:
         dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
         self.model = AutoModelForImageTextToText.from_pretrained(v["model"], dtype=dtype, device_map="auto")
         self.model.generation_config.temperature = None
+        self.revision = f"{v['model']}@{getattr(self.model.config, '_commit_hash', None) or 'unknown'}"
 
     def ask(self, image_bgr):
         from PIL import Image

@@ -1,10 +1,12 @@
+import numpy as np
 import pytest
 
 from elder_monitor.live import LiveSession, chat_messages
 from elder_monitor.pipeline import run_analysis
-from elder_monitor.schemas import UNKNOWN
+from elder_monitor.schemas import BED_EXIT, UNKNOWN
 
 from conftest import script
+from test_units import LYING_ON_BED, STANDING_BESIDE, person
 
 LIE = {"pose": "lying"}
 SIT = {"pose": "sitting"}
@@ -63,3 +65,23 @@ def test_server_rejects_bad_input(cfg, tmp_path):
         assert ws.receive_json()["message"]["text"] == "Start the camera first."
         ws.send_json({"type": "start", "bed_polygon": [[5, 5]]})
         assert ws.receive_json()["type"] == "error"
+
+
+def test_live_evidence_is_observed_time_at_any_frame_rate(cfg):
+    """10 s in bed, then standing away from it, with frames at 1, 2, 4 and 0.5 times the 5 fps config.
+    Too slow a stream leaves empty slots: nothing is confirmed from them and the view is flagged."""
+    lying = person({k: (x + 2100, y) for k, (x, y) in LYING_ON_BED.items()})
+    standing = person({k: (x + 2700, y) for k, (x, y) in STANDING_BESIDE.items()})
+    frame, delays = np.zeros((1000, 4000, 3), np.uint8), {}
+    for rate in (5, 10, 20, 2.5):
+        clock = {}
+        session = LiveSession(cfg, tracker=lambda f: [lying if clock["t"] < 10 else standing])
+        for k in range(int(16 * rate)):
+            clock["t"] = k / rate
+            session.push(frame, k / rate)
+        times = [o.t for o in session.obs]
+        assert times == sorted(set(times)) and all(abs(t / 0.2 - round(t / 0.2)) < 1e-6 for t in times)
+        delays[rate] = [e.confirmed_sec - e.start_sec for e in session.result["events"] if e.event == BED_EXIT]
+    assert delays[5] == delays[10] == delays[20] == [pytest.approx(1.8)]
+    assert not delays[2.5] and session.result["view"]["missing_frame_share"] == pytest.approx(0.5, abs=0.02)
+    assert session.result["view"]["degraded"] and session.push(frame, 15.6)["skipped"]

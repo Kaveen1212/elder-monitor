@@ -216,7 +216,7 @@ def test_low_confidence_track_continuation_onto_the_bed_is_rejected(cfg):
     assert sel.select(0.0, frame, [person(STANDING_BESIDE)])[2] == "selected"
     phantom = person(LYING_ON_BED)
     phantom.conf = 0.36
-    assert sel.select(0.2, frame, [phantom])[2] == "identity_uncertain"
+    assert sel.select(0.2, frame, [phantom])[1:] == (False, "low_confidence")
     confident = person(LYING_ON_BED)
     assert sel.select(0.4, frame, [confident])[2] == "tracked"
 

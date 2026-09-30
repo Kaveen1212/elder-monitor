@@ -6,7 +6,7 @@
       "start_time": "00:00:13",
       "confirmed_time": "00:00:17",
       "start_sec": 13.2,
-      "confirmed_sec": 16.6,
+      "confirmed_sec": 16.8,
       "previous_state": "sitting_on_bed",
       "current_state": "walking",
       "confidence": 0.12,
@@ -35,7 +35,7 @@
       "rule": "EVENT_PENDING",
       "decision": "MONITOR",
       "start_sec": 13.2,
-      "end_sec": 16.6,
+      "end_sec": 16.8,
       "start_time": "00:00:13",
       "end_time": "00:00:17"
     },

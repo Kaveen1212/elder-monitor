@@ -1,20 +1,15 @@
 {
-  "bed_events": [
+  "bed_events": [],
+  "alerts": [
     {
-      "event": "return_to_bed",
-      "episode_id": 1,
-      "start_time": "00:00:08",
-      "confirmed_time": "00:00:10",
+      "rule": "UNCERTAIN",
+      "decision": "MONITOR",
       "start_sec": 7.6,
-      "confirmed_sec": 9.6,
-      "previous_state": "walking",
-      "current_state": "lying_in_bed",
-      "confidence": 0.45,
-      "decision": "NORMAL",
-      "evidence": []
+      "end_sec": 15.2,
+      "start_time": "00:00:08",
+      "end_time": "00:00:15"
     }
   ],
-  "alerts": [],
   "rejected_exit_candidates": [],
   "unresolved_candidates": []
 }

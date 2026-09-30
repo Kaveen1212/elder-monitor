@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from elder_monitor.features import Scene
 from elder_monitor.pipeline import run_analysis
 from elder_monitor.schemas import (
     ACTIVITY_STATES, ALERT, BED_EXIT, BED_STATES, LYING_IN_BED, LYING_ON_FLOOR, MONITOR, RETURN_TO_BED,
@@ -324,6 +325,7 @@ class StubVLM:
 
 def test_vlm_resolves_long_in_bed_gap(cfg):
     obs, T = script((10, LIE), (40, GONE), (10, LIE))
-    r = run_analysis(obs, T, cfg, frames=lambda t: np.zeros((8, 8, 3), np.uint8), vlm_factory=StubVLM)
+    r = run_analysis(obs, T, cfg, frames=lambda t: np.zeros((80, 80, 3), np.uint8), scene=Scene(cfg, 80, 80),
+                     vlm_factory=StubVLM)
     assert labels(r) == [LYING_IN_BED] and r["vlm_calls"] == 3
     assert UNKNOWN in labels(run_analysis(obs, T, cfg, use_agent=False))

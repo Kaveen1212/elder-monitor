@@ -3,4 +3,4 @@ start,end,start_sec,end_sec,duration_sec,label,confidence
 00:01,00:03,1.4,2.6,1.2,WALKING,0.889
 00:03,00:04,2.6,4.4,1.8,STANDING,0.829
 00:04,00:08,4.4,7.6,3.2,WALKING,0.701
-00:08,00:15,7.6,15.2,7.6,LYING_IN_BED,0.45
+00:08,00:15,7.6,15.2,7.6,UNKNOWN,0.0

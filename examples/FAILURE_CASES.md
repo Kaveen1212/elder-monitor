@@ -45,13 +45,14 @@ Four labelled clips (97.2 s), before → after:
 | Predicted UNKNOWN share (ground truth 0.131) | 0.176 | 0.149 | 0.149 |
 | Bed exits (TP / FP / FN, start error) | 4 / 0 / 0, 0.47 s | 4 / 0 / 0, 0.47 s | 4 / 0 / 0, 0.47 s |
 | Returns to bed (TP / FP / FN, start error) | 0 / 1 / 1 | 1 / 0 / 0, 0.66 s | 1 / 0 / 0, 0.66 s |
-| Activity duration error (macro) | 1.62 s | 1.47 s | 0.67 s |
+| Activity duration error (macro) | 1.62 s | 1.46 s | 0.66 s |
 | SITTING_ON_BED → STANDING | 8.6 s | 8.6 s | 1.2 s (the real stand-up, 0.6 s early in two clips) |
 | WALKING → UNKNOWN | 3.3 s | 0.7 s | 0.7 s |
 | VLM calls on these four clips | 0 | 0 | 9 |
 
 The agent without the VLM (`--no-vlm`) gives the same numbers as the no-agent baseline. The unlabelled clips
-`pexels_9057924` and `pexels_6898173` are unchanged.
+`pexels_9057924` and `pexels_6898173` are unchanged. The "after" duration errors are from the current evaluator,
+which uses unrounded durations; the "before" value was computed from durations rounded to 0.1 s.
 
 ---
 
@@ -283,7 +284,7 @@ reflection in a wall mirror. Before the fix the system never reported him on the
 **Why, step by step.**
 1. **The right person is tracked.** At t = 0 the only detection is the close-up (confidence 0.87), so it is selected. It
    is the real man, and he stays tracked in 106 of the 107 later samples. The reflection is seen alongside him, so it is
-   remembered as "another person" and never adopted; masking it changes nothing.
+   remembered as "another person" and is not adopted in this clip; masking it changes nothing.
 2. **Too few joints.** The head is above the frame, and the camera mostly sees his right arm, hip and knee. 36 of 108
    samples have too few joints; 23 more have no torso on a clipped box.
 3. **The measured samples fall outside the bed.** The 45 measurable samples are correctly seated, but their hips are
@@ -305,8 +306,8 @@ reflection in a wall mirror. Before the fix the system never reported him on the
   one short dropout in a long night is not flagged. This clip: 0.34 (worst window 0.50) → degraded. Every other
   development clip is ≤ 0.03.
 - **Ignore polygons** (`scene.ignore_polygons`, for mirrors and TV screens). A detection lying ≥ 80% inside one is
-  dropped before selection, except the tracked resident, so someone walking in front of a mirror is never lost. It is a
-  safeguard (a lone reflection can never be selected); it is not configured for this clip because it changes nothing
+  dropped before selection, except the tracked resident, so someone walking in front of a mirror is not dropped. It is a
+  safeguard (a lone reflection inside the polygon is not selected); it is not configured for this clip because it changes nothing
   here.
 
 **Result.**
@@ -356,6 +357,45 @@ unreviewed version:
 | The live chat called the new review "lying outside the bed" | one message per trigger | (visible in the live chat) |
 
 The full-system outputs of all seven example clips are identical before and after these review fixes.
+
+---
+
+## Review of commit `e1c709a`
+
+A later review of commit `e1c709a` reported seven more problems. Each was first reproduced on that commit, then
+fixed. The tests are in `tests/test_review.py`, plus one in `tests/test_live.py`. 33 of the 40 tests in
+`test_review.py` fail on `e1c709a`; the other 7 check behaviour that must not change, such as a real walk-out still
+confirming an exit.
+
+| # | Problem found | Fix | Tests |
+|---|---|---|---|
+| 1 | A box that kept the resident's track ID was adopted with no check. If ByteTrack handed that ID to another person, they became the resident. | A same-ID box must be within reach of the last position and keep an appearance similarity of at least 0.3 (`identity.track_min_similarity`); otherwise the sample is `identity_uncertain`. Checked on the six development clips only: their 481 same-ID continuations used at most 0.68 of the allowed distance, and the lowest similarity was 0.52. No development sample changed. | `test_another_person_given_the_residents_track_id_is_not_adopted` |
+| 2 | The lying count of a pending return survived `UNKNOWN`. Walking 3 s, sitting on the bed 3 s, lying 1.6 s, 31 s `UNKNOWN`, lying 3 s: the return was confirmed at 38.6 s, the moment lying resumed. | The return needs 2 s of lying without a break. `UNKNOWN` or another state restarts the count; the occurrence time is kept. The same sequence now confirms at 40.4 s. | `test_return_needs_continuous_lying_after_an_unknown_gap`, `test_sitting_rule_also_restarts_after_unknown` |
+| 3 | The VLM prompt asked about any visible person, and a VLM answer relabelled the whole gap. So a gap before the resident was selected (`target_not_selected`) could become SITTING_ON_BED. | Only samples where the resident is identified are sent to the VLM and relabelled: the resident's own tracked box, or the bed when nobody at all is detected. The crop outlines that box in green, and the prompt asks only about the person inside it. | `test_vlm_is_not_asked_about_an_unselected_target`, `test_vlm_cannot_relabel_a_caregiver_occlusion`, `test_vlm_helps_a_weak_keypoint_resident_marked_in_the_crop` |
+| 4 | `evaluate` scored only `min(annotation, prediction)`. A prediction cut at 50 s of a 100 s label scored as if the other 50 s and their events did not exist. Durations came from rounded summary values. | The prediction must cover the labelled duration to within 0.05 s, or `evaluate` stops with an error. Durations come from the timelines. Labels, order, gaps, overlaps and timestamps of predictions are checked. | `test_truncated_prediction_is_rejected_not_scored`, `test_rounding_sized_coverage_difference_is_scored_with_every_event`, `test_malformed_predictions_are_rejected` |
+| 5 | An identity conflict counted as leaving the camera view. Standing, a 0.6 s step, then 2 s with a caregiver in front confirmed a bed exit. | Only time with nobody confidently detected counts as out of view: `not_detected`, and the new `low_confidence` when only weak boxes remain. A confident unconfirmed person, lost joints and missing frames only pause the count. | `test_caregiver_stepping_in_front_after_a_step_is_not_an_exit`, `test_walking_out_of_view_is_still_an_exit` |
+| 6 | Evidence counted one sampling step per sample. With frames arriving at 10 fps and a 5 fps config, a 2 s departure was confirmed after 0.9 s. | Evidence counts one sampling step per filled slot of the sampling grid, so extra frames add nothing and empty slots count nothing. Live frames are placed on the same grid: a second frame for a slot is dropped before the tracker, and an empty slot becomes a `no_frame` sample. `view_quality` reports the share of empty slots. | `test_departure_needs_two_observed_seconds_at_any_arrival_rate`, `test_live_evidence_is_observed_time_at_any_frame_rate` |
+| 7 | The configuration was not checked: three identical bed points or a negative fps were accepted. | `validate_config` runs before any video is read. It checks the sampling rate, polygons (at least 3 normalised points, non-zero area, no self-crossing), target point and time, confidences, durations and budgets, and names the bad key. | `test_invalid_config_is_rejected_with_a_readable_error` (17 cases), `test_config_is_validated_before_the_video_is_opened` |
+
+One fix needed a second attempt. The first version of fix 6 counted the time since the previous sample, capped at
+one step. On `pexels_8090735`, a 24 fps video, the 5 fps samples are 0.17 s or 0.21 s apart. Capping cut the long
+intervals, so 10 samples added up to only 1.94 s, and that clip's exit was missed. Counting grid slots gives an
+unbiased count. The change was made before the held-out clips were run.
+
+What changed on the example clips:
+- **Saved predictions, rescored.** Scoring the `e1c709a` predictions again with the corrected evaluator, without
+  re-running any analysis, changes only the analysed time (development 97.2 → 97.25 s, held-out 278.5 → 278.66 s)
+  and the duration errors in the third decimal. Accuracies, events and per-state totals are the same.
+- **Development clips, re-run.** Perception, analysis and the VLM were run again. On all 20 clips the perception
+  output changed only in the new `low_confidence` reason (samples that were `identity_uncertain` with only weak
+  boxes in view); the same-ID check refused no sample. The timelines of all seven development clips are identical. The exit in `pexels_4049556` and its
+  round trip is now confirmed at 16.8 s instead of 16.6 s, and the return at 36.8 s instead of 37.0 s.
+- **Held-out clips, re-run once.** Activity accuracy 0.724 → 0.667, bed-status accuracy 0.940 → 0.836, returns found
+  2 → 1 of 3; exits (1 of 3), false events (none) and ALERTs (none) are unchanged, and so is the no-agent baseline.
+  Two clips account for all of it, both through fix 3. In `6130024` nobody is selected before the configured target
+  time (11.5 s), and the old code had let the VLM relabel that unidentified time as lying. In `8539659` the resident
+  is not detected once he lies down, and the VLM's three answers about the outlined bed did not agree, so the gap and
+  the return stay unresolved. These are the numbers to quote; `examples/README.md` has the per-clip table.
 
 ---
 

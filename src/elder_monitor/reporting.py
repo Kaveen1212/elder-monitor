@@ -11,7 +11,7 @@ from .schemas import (
 )
 from .temporal import durations, labels_at
 
-SCHEMA_VERSION = "1.4"
+SCHEMA_VERSION = "1.5"
 
 
 def _hms(sec):

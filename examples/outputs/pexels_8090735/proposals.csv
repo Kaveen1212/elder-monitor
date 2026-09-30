@@ -7,7 +7,7 @@ t,label,confidence,reason,source
 1.0,SITTING_ON_BED,0.928,upright_on_bed,rules
 1.21,SITTING_ON_BED,0.922,upright_on_bed,rules
 1.42,SITTING_ON_BED,0.93,upright_on_bed,rules
-1.58,UNKNOWN,0.0,identity_uncertain,rules
+1.58,UNKNOWN,0.0,low_confidence,rules
 1.79,SITTING_ON_BED,0.96,upright_on_bed,rules
 2.0,SITTING_ON_BED,0.992,upright_on_bed,rules
 2.21,SITTING_ON_BED,0.964,upright_on_bed,rules
@@ -36,5 +36,5 @@ t,label,confidence,reason,source
 6.8,UNKNOWN,0.0,not_detected,rules
 7.01,UNKNOWN,0.0,not_detected,rules
 7.22,UNKNOWN,0.0,not_detected,rules
-7.38,UNKNOWN,0.0,identity_uncertain,rules
-7.59,UNKNOWN,0.0,identity_uncertain,rules
+7.38,UNKNOWN,0.0,low_confidence,rules
+7.59,UNKNOWN,0.0,low_confidence,rules

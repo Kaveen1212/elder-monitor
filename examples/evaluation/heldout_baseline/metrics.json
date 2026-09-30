@@ -4,40 +4,41 @@
     "event_tolerance_sec": 2.0,
     "event_time": "occurrence start (not confirmation)",
     "clips": 13,
-    "analysed_sec": 278.5
+    "analysed_sec": 278.66,
+    "coverage_tolerance_sec": 0.05
   },
   "clips": [
     {
       "clip": "outputs_baseline/pexels_7938959",
-      "analysed_sec": 10.0,
+      "analysed_sec": 10.01,
       "activity_accuracy": 0.68,
       "longest_out_of_bed_gt_sec": 1.2,
       "longest_out_of_bed_pred_sec": 0.0
     },
     {
       "clip": "outputs_baseline/pexels_4052925",
-      "analysed_sec": 21.6,
+      "analysed_sec": 21.64,
       "activity_accuracy": 0.968,
       "longest_out_of_bed_gt_sec": 0.7,
       "longest_out_of_bed_pred_sec": 0.0
     },
     {
       "clip": "outputs_baseline/pexels_8090730",
-      "analysed_sec": 15.3,
+      "analysed_sec": 15.31,
       "activity_accuracy": 0.288,
       "longest_out_of_bed_gt_sec": 2.8,
       "longest_out_of_bed_pred_sec": 1.6
     },
     {
       "clip": "outputs_baseline/pexels_9615483",
-      "analysed_sec": 38.5,
+      "analysed_sec": 38.52,
       "activity_accuracy": 0.273,
       "longest_out_of_bed_gt_sec": 0.0,
       "longest_out_of_bed_pred_sec": 0.0
     },
     {
       "clip": "outputs_baseline/pexels_8539664",
-      "analysed_sec": 15.9,
+      "analysed_sec": 15.92,
       "activity_accuracy": 0.182,
       "longest_out_of_bed_gt_sec": 8.4,
       "longest_out_of_bed_pred_sec": 8.8
@@ -51,28 +52,28 @@
     },
     {
       "clip": "outputs_baseline/pexels_8591515",
-      "analysed_sec": 13.7,
+      "analysed_sec": 13.68,
       "activity_accuracy": 0.949,
       "longest_out_of_bed_gt_sec": 7.9,
       "longest_out_of_bed_pred_sec": 8.6
     },
     {
       "clip": "outputs_baseline/pexels_7505324",
-      "analysed_sec": 16.4,
+      "analysed_sec": 16.37,
       "activity_accuracy": 0.933,
       "longest_out_of_bed_gt_sec": 0.0,
       "longest_out_of_bed_pred_sec": 0.0
     },
     {
       "clip": "outputs_baseline/pexels_10608105",
-      "analysed_sec": 34.2,
+      "analysed_sec": 34.24,
       "activity_accuracy": 0.699,
       "longest_out_of_bed_gt_sec": 0.0,
       "longest_out_of_bed_pred_sec": 0.0
     },
     {
       "clip": "outputs_baseline/pexels_5983705",
-      "analysed_sec": 23.1,
+      "analysed_sec": 23.08,
       "activity_accuracy": 0.991,
       "longest_out_of_bed_gt_sec": 0.0,
       "longest_out_of_bed_pred_sec": 0.0
@@ -86,7 +87,7 @@
     },
     {
       "clip": "outputs_baseline/pexels_8088284",
-      "analysed_sec": 25.8,
+      "analysed_sec": 25.79,
       "activity_accuracy": 0.667,
       "longest_out_of_bed_gt_sec": 0.0,
       "longest_out_of_bed_pred_sec": 0.0
@@ -315,10 +316,37 @@
       "recall": 0.333,
       "false_per_hour": 0.0,
       "mean_abs_time_error_sec": 0.7,
-      "mean_confirmation_delay_sec": 2.0
+      "mean_confirmation_delay_sec": 1.8
     }
   },
   "duration": {
-    "activity_macro_abs_error_sec": 5.056
+    "activity_macro_abs_error_sec": 5.062,
+    "activity_totals_sec": {
+      "SITTING_ON_BED": {
+        "gt_sec": 167.5,
+        "pred_sec": 115.4,
+        "sum_abs_error_sec": 66.4
+      },
+      "STANDING": {
+        "gt_sec": 13.8,
+        "pred_sec": 16.2,
+        "sum_abs_error_sec": 6.2
+      },
+      "WALKING": {
+        "gt_sec": 14.4,
+        "pred_sec": 10.4,
+        "sum_abs_error_sec": 4.0
+      },
+      "UNKNOWN": {
+        "gt_sec": 5.5,
+        "pred_sec": 94.2,
+        "sum_abs_error_sec": 88.7
+      },
+      "LYING_IN_BED": {
+        "gt_sec": 77.4,
+        "pred_sec": 42.4,
+        "sum_abs_error_sec": 42.2
+      }
+    }
   }
 }

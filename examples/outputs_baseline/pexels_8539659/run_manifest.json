@@ -1,21 +1,35 @@
 {
-  "schema_version": "1.4",
+  "schema_version": "1.5",
   "code_version": "0.1.0",
   "mode": "offline",
   "video": "data\\pexels_8539659.mp4",
   "video_hash": "1e62710498c73fa99aec552a0bea63e4010da41fdbcb86eb245ec35869b56287",
   "duration_sec": 15.2,
-  "config_hash": "723b5737cd6ce334",
-  "pose_model": "yolo11n-pose.pt",
+  "config_hash": "4ee3322ea9b75684",
+  "pose_model": "yolo11n-pose.pt sha256:869e83fcdffd",
   "vlm_model": null,
+  "vlm_revision": null,
   "agent_enabled": false,
   "vlm_calls": 0,
   "sampling_fps": 5,
   "samples": 76,
-  "perception_sec": 3.9,
+  "perception_sec": 4.5,
   "reused_observations": "outputs\\pexels_8539659\\observations.jsonl",
+  "analysis_sec": 0.0,
+  "vlm_load_sec": 0.0,
+  "vlm_inference_sec": 0.0,
   "total_runtime_sec": 0.0,
   "platform": "Windows-11-10.0.26200-SP0",
+  "versions": {
+    "python": "3.12.0",
+    "ultralytics": "8.4.21",
+    "torch": "2.5.1+cu121",
+    "transformers": "5.6.1",
+    "opencv-python": "4.13.0.92",
+    "numpy": "2.4.3",
+    "scipy": "1.17.1",
+    "lap": "0.5.13"
+  },
   "config": {
     "scene": {
       "bed_polygon": [
@@ -69,6 +83,7 @@
       "min_det_conf": 0.5,
       "min_similarity": 0.5,
       "margin": 0.1,
+      "track_min_similarity": 0.3,
       "max_jump": 0.25,
       "jump_per_sec": 0.5
     },

@@ -1,5 +1,8 @@
+import math
+
 import cv2
 
+from .config import validate_config
 from .features import Scene, add_speed, measure
 from .pipeline import run_analysis
 from .reporting import fmt_clock, fmt_human
@@ -96,15 +99,27 @@ def chat_messages(result, cfg, closed_before=None):
 
 class LiveSession:
     """Re-runs the offline analysis over the whole session on every frame, so live answers use the same
-    temporal engine, agent and policy as recorded video; only messages not sent before are returned."""
+    temporal engine, agent and policy as recorded video; only messages not sent before are returned.
+
+    Arriving frames are resampled onto the sampling.fps grid, as recorded video is: a frame for a slot that is
+    already filled is dropped before the tracker, and slots with no frame become no_frame samples, so fast,
+    duplicate or late frames never add observed time. The analysis is recomputed over the whole session per frame,
+    so its cost grows with session length."""
 
     def __init__(self, cfg, tracker=None):
-        self.cfg = cfg
+        validate_config(cfg)
+        self.cfg, self.step = cfg, 1.0 / cfg["sampling"]["fps"]
         self.tracker = tracker or PoseTracker(cfg)
-        self.scene = self.selector = self.result = None
+        self.scene = self.selector = self.result = self.slot = None
         self.obs, self.sent = [], {}
 
     def push(self, frame, t):
+        slot = math.floor(t / self.step + 0.5 + 1e-9)
+        if self.slot is not None and slot <= self.slot:
+            return {"type": "frame", "t": round(t, 2), "skipped": True}
+        if self.slot is not None:
+            self.obs += [Observation(round(s * self.step, 4), reason="no_frame") for s in range(self.slot + 1, slot)]
+        self.slot, t = slot, round(slot * self.step, 4)
         if self.scene is None:
             h, w = frame.shape[:2]
             self.scene = Scene(self.cfg, w, h)
@@ -122,7 +137,7 @@ class LiveSession:
     def update(self):
         o = self.obs[-1]
         t = o.t
-        r = self.result = run_analysis(self.obs, t + 1.0 / self.cfg["sampling"]["fps"], self.cfg, scene=self.scene)
+        r = self.result = run_analysis(self.obs, t + self.step, self.cfg, scene=self.scene)
         act, dec = r["activity"][-1], r["decisions"][-1]
         return {
             "type": "frame", "t": round(t, 2), "time": fmt_clock(t), "person": pose(o) or None,

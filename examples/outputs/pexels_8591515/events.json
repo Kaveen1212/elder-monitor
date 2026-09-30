@@ -4,12 +4,12 @@
       "event": "return_to_bed",
       "episode_id": 1,
       "start_time": "00:00:09",
-      "confirmed_time": "00:00:11",
+      "confirmed_time": "00:00:10",
       "start_sec": 8.6,
-      "confirmed_sec": 10.6,
+      "confirmed_sec": 10.4,
       "previous_state": "standing",
       "current_state": "lying_in_bed",
-      "confidence": 0.58,
+      "confidence": 0.56,
       "decision": "NORMAL",
       "evidence": []
     }

@@ -24,6 +24,7 @@
   "view_quality": {
     "worst_low_keypoint_share_10s": 0.08,
     "low_keypoint_share": 0.02,
+    "missing_frame_share": 0.0,
     "degraded": false
   },
   "human": {

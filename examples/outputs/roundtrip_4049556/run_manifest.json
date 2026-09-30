@@ -1,21 +1,35 @@
 {
-  "schema_version": "1.4",
+  "schema_version": "1.5",
   "code_version": "0.1.0",
   "mode": "offline",
   "video": "data\\roundtrip_4049556.mp4",
   "video_hash": "6aec5a7681e7eb6e07c893e8b702360d91064943733543850de17308891122cb",
   "duration_sec": 44.13,
-  "config_hash": "5cc0be52d4440fe9",
-  "pose_model": "yolo11n-pose.pt",
+  "config_hash": "663212e4a1a6851c",
+  "pose_model": "yolo11n-pose.pt sha256:869e83fcdffd",
   "vlm_model": "Qwen/Qwen2.5-VL-3B-Instruct",
+  "vlm_revision": "Qwen/Qwen2.5-VL-3B-Instruct@66285546d2b821cf421d4f5eb2576359d3770cd3",
   "agent_enabled": true,
   "vlm_calls": 6,
   "sampling_fps": 5,
   "samples": 221,
-  "perception_sec": 5.6,
+  "perception_sec": 6.3,
   "reused_observations": "outputs\\roundtrip_4049556\\observations.jsonl",
-  "total_runtime_sec": 30.4,
+  "analysis_sec": 33.4,
+  "vlm_load_sec": 25.7,
+  "vlm_inference_sec": 7.5,
+  "total_runtime_sec": 33.4,
   "platform": "Windows-11-10.0.26200-SP0",
+  "versions": {
+    "python": "3.12.0",
+    "ultralytics": "8.4.21",
+    "torch": "2.5.1+cu121",
+    "transformers": "5.6.1",
+    "opencv-python": "4.13.0.92",
+    "numpy": "2.4.3",
+    "scipy": "1.17.1",
+    "lap": "0.5.13"
+  },
   "config": {
     "scene": {
       "bed_polygon": [
@@ -65,6 +79,7 @@
       "min_det_conf": 0.5,
       "min_similarity": 0.5,
       "margin": 0.1,
+      "track_min_similarity": 0.3,
       "max_jump": 0.25,
       "jump_per_sec": 0.5
     },

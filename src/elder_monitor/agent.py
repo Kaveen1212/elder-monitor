@@ -1,6 +1,9 @@
+import time
 from bisect import bisect_left, bisect_right
 from collections import Counter
 from itertools import groupby
+
+import cv2
 
 from .events import departure
 from .schemas import (
@@ -8,6 +11,8 @@ from .schemas import (
 )
 from .temporal import smooth
 from .vlm import answer_state
+
+UNCONFIRMED = ("identity_uncertain", "low_confidence")
 
 
 def _step(action, window, finding):
@@ -28,6 +33,7 @@ class ContextAgent:
         self.frames, self.scene = frames, scene
         self.vlm_factory, self.vlm, self.vlm_calls, self.use_vlm = vlm_factory, None, 0, vlm_factory is not None
         self.max_vlm_calls = cfg["vlm"]["max_calls"]
+        self.vlm_load_sec = self.vlm_inference_sec = 0.0
         self.trace, self._baselines, self._vlm_cache = [], {}, {}
 
     def review(self):
@@ -72,12 +78,15 @@ class ContextAgent:
                 if frame is None:
                     return []
                 self.vlm_calls += 1
+                started = time.perf_counter()
                 try:
                     ans, raw = vlm.ask(self._crop(frame, t))
                 except Exception as exc:
                     print(f"[agent] VLM call failed, continuing with geometry only: {exc}")
                     self.vlm = None
                     return []
+                finally:
+                    self.vlm_inference_sec += time.perf_counter() - started
                 self._vlm_cache[key] = {"t": key, "answer": ans} if ans else {"t": key, "answer": None,
                                                                               "raw": raw[:200]}
             answers.append(self._vlm_cache[key])
@@ -122,15 +131,15 @@ class ContextAgent:
         steps.append(_step("inspect_bed_relation", (t0, t1), geo))
         label, why = LYING_ON_FLOOR, "lying outside the bed"
         if geo["body_in_bed"] >= self.cfg["posture"]["in_bed_fraction"] / 2:
-            state = self._vlm_consensus(t0, t1, steps)
+            state = self._vlm_consensus(i, j, steps)
             if state in (LYING_IN_BED, LYING_ON_FLOOR):
                 label, why = state, "VLM support check"
             elif state is None:
                 back = self._look(t0, steps, ahead=False)
                 if back and back["label"] == LYING_IN_BED:
                     label, why = LYING_IN_BED, "continues in-bed lying; body overlaps the bed outline"
-        for k in range(i, j):
-            if label == LYING_ON_FLOOR or not self.obs[k].visible or self.obs[k].body_in_bed > 0:
+        for k, o in enumerate(self.obs[i:j], i):
+            if label == LYING_ON_FLOOR or self._target_box(o) and (not o.visible or o.body_in_bed > 0):
                 self.props[k] = Proposal(self.times[k], label, 0.5, why, "agent")
         self._log("LYING_OUTSIDE_BED", t0, t1, steps, label, why)
 
@@ -150,7 +159,7 @@ class ContextAgent:
         if not (back and ahead and back["label"] == ahead["label"] == SITTING_ON_BED) or not self._sits_after(j):
             return
         label, why = STANDING, "kept: the VLM did not confirm sitting on the bed"
-        if self._vlm_consensus(t0, t1, steps) == SITTING_ON_BED:
+        if self._vlm_consensus(i, j, steps) == SITTING_ON_BED:
             label, why = SITTING_ON_BED, "VLM: seated on the bed edge; the legs only look straight"
             for k in range(i, j):
                 if self.props[k].label in (STANDING, UNKNOWN) and self.obs[k].visible:
@@ -172,22 +181,24 @@ class ContextAgent:
         back = self._look(t0, steps, ahead=False)
         ahead = self._look(t1, steps, ahead=True)
         in_bed_both = bool(back and ahead and back["label"] in IN_BED_STATES and ahead["label"] in IN_BED_STATES)
-        occluded = cause == "identity_uncertain" or (in_bed_both and back["label"] == ahead["label"] == LYING_IN_BED)
+        occluded = cause in UNCONFIRMED or (in_bed_both and back["label"] == ahead["label"] == LYING_IN_BED)
         last_seen = next((o for o in reversed(self.obs[:i]) if o.visible), None)
         still_detected = 2 * sum(o.bbox is not None and o.identity_ok for o in self.obs[i:j]) >= j - i
         left_view = last_seen is not None and last_seen.truncated and not last_seen.hip_in_bed and not still_detected
-        label, why = UNKNOWN, ""
+        label, why, bridged = UNKNOWN, "", False
         if in_bed_both and occluded and not left_view and t1 - t0 <= self.a["max_bridge_sec"]:
-            label, why = back["label"], "in bed before and after a short occlusion"
-        elif (in_bed_both or cause != "identity_uncertain") and not left_view:
-            state = self._vlm_consensus(t0, t1, steps)
+            label, why, bridged = back["label"], "in bed before and after a short occlusion", True
+        elif (in_bed_both or cause not in UNCONFIRMED) and not left_view:
+            state = self._vlm_consensus(i, j, steps)
             if state and (not in_bed_both or state in IN_BED_STATES or state == LYING_ON_FLOOR):
                 label, why = state, "VLM check across the gap"
         if label == UNKNOWN:
             why = "resident left the camera view" if left_view else f"insufficient evidence ({cause})"
             steps.append(_step("abstain", (t0, t1), why))
         else:
-            self._relabel(i, j, label, 0.45, why)
+            for k, o in enumerate(self.obs[i:j], i):
+                if bridged or self._target_box(o):
+                    self.props[k] = Proposal(self.times[k], label, 0.45, why, "agent")
         self._log("AMBIGUOUS_GAP", t0, t1, steps, label, why)
 
     def _look(self, t, steps, ahead, nearest=True):
@@ -212,38 +223,59 @@ class ContextAgent:
         key = "seconds_before" if last else "seconds_after"
         return {"label": label, "share": round(labels.count(label) / len(labels), 2), key: round(gap, 1)}
 
-    def _vlm_consensus(self, t0, t1, steps):
-        n = self.a["vlm_frames"]
-        answers = self.inspect_frames([t0 + (t1 - t0) * (k + 1) / (n + 1) for k in range(n)])
+    def _vlm_consensus(self, i, j, steps):
+        """Ask about vlm_frames samples spread over the run where the resident is identified; all must agree."""
+        n, window = self.a["vlm_frames"], (self.times[i], self.times[j - 1] + self.dt)
+        ks = [k for k in range(i, j) if self._target_box(self.obs[k])]
+        if len(ks) < n:
+            if self.use_vlm and self.frames is not None:
+                steps.append(_step("inspect_target_crop", window, "skipped: resident not identified in enough samples"))
+            return None
+        answers = self.inspect_frames([self.times[ks[(m + 1) * len(ks) // (n + 1)]] for m in range(n)])
         if len(answers) < n:
             if self.use_vlm:
-                steps.append(_step("inspect_target_crop", (t0, t1), "skipped: VLM unavailable or budget exhausted"))
+                steps.append(_step("inspect_target_crop", window, "skipped: VLM unavailable or budget exhausted"))
             return None
         states = [answer_state(a["answer"]) for a in answers]
         state = states[0] if states[0] and all(s == states[0] for s in states) else None
-        steps.append(_step("inspect_target_crop", (t0, t1), {"answers": answers, "state": state}))
+        steps.append(_step("inspect_target_crop", window, {"answers": answers, "state": state}))
         return state
 
     def _load_vlm(self):
         if self.vlm is None and self.vlm_factory is not None:
             factory, self.vlm_factory = self.vlm_factory, None
+            started = time.perf_counter()
             try:
                 self.vlm = factory()
             except Exception as exc:
                 print(f"[agent] VLM unavailable, continuing with geometry only: {exc}")
+            self.vlm_load_sec = time.perf_counter() - started
         return self.vlm
 
+    def _target_box(self, o):
+        """What the VLM is asked about: the resident's own tracked box, or the bed when nobody at all was detected.
+        Samples before the resident is selected, or with an unconfirmed person, have none."""
+        if o.identity_ok and o.bbox is not None:
+            return o.bbox
+        return self.scene.bed_box() if self.scene and o.reason == "not_detected" else None
+
     def _crop(self, frame, t):
+        """The resident's box and the bed with some context, the target outlined in green for the prompt."""
         o = self.obs[min(bisect_left(self.times, t), len(self.obs) - 1)]
-        boxes = [b for b in (o.bbox, self.scene.bed_box() if self.scene else None) if b]
-        if not boxes:
-            return frame
+        target = self._target_box(o)
+        boxes = [b for b in (target, self.scene.bed_box() if self.scene else None) if b]
         h, w = frame.shape[:2]
         x1, y1 = min(b[0] for b in boxes), min(b[1] for b in boxes)
         x2, y2 = max(b[2] for b in boxes), max(b[3] for b in boxes)
         px, py = 0.15 * (x2 - x1), 0.15 * (y2 - y1)
         x1, y1, x2, y2 = int(max(x1 - px, 0)), int(max(y1 - py, 0)), int(min(x2 + px, w)), int(min(y2 + py, h))
-        return frame[y1:y2, x1:x2] if x2 > x1 and y2 > y1 else frame
+        if x2 <= x1 or y2 <= y1:
+            x1, y1, x2, y2 = 0, 0, w, h
+        crop = frame[y1:y2, x1:x2].copy()
+        thick = max(2, round(0.004 * max(x2 - x1, y2 - y1)))
+        cv2.rectangle(crop, (int(target[0]) - x1, int(target[1]) - y1), (int(target[2]) - x1, int(target[3]) - y1),
+                      (0, 255, 0), thick)
+        return crop
 
     def _runs(self, label, min_sec):
         """Runs of a smoothed label; runs of a known label separated only by short dropouts are joined."""
@@ -260,10 +292,6 @@ class ContextAgent:
                     runs.append((i, j))
             i = j
         return [(i, j) for i, j in runs if self.times[j - 1] + self.dt - self.times[i] >= min_sec - 1e-9]
-
-    def _relabel(self, i, j, label, confidence, why):
-        for k in range(i, j):
-            self.props[k] = Proposal(self.times[k], label, confidence, why, "agent")
 
     @staticmethod
     def _describe_departure(t, stats):

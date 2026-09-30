@@ -4,33 +4,34 @@
     "event_tolerance_sec": 2.0,
     "event_time": "occurrence start (not confirmation)",
     "clips": 4,
-    "analysed_sec": 97.2
+    "analysed_sec": 97.25,
+    "coverage_tolerance_sec": 0.05
   },
   "clips": [
     {
       "clip": "outputs_baseline/pexels_4049556",
-      "analysed_sec": 17.6,
+      "analysed_sec": 17.57,
       "activity_accuracy": 0.739,
       "longest_out_of_bed_gt_sec": 2.2,
       "longest_out_of_bed_pred_sec": 2.8
     },
     {
       "clip": "outputs_baseline/pexels_4052924",
-      "analysed_sec": 27.9,
+      "analysed_sec": 27.88,
       "activity_accuracy": 0.978,
       "longest_out_of_bed_gt_sec": 3.0,
       "longest_out_of_bed_pred_sec": 2.6
     },
     {
       "clip": "outputs_baseline/pexels_8090735",
-      "analysed_sec": 7.7,
+      "analysed_sec": 7.67,
       "activity_accuracy": 0.766,
       "longest_out_of_bed_gt_sec": 2.3,
       "longest_out_of_bed_pred_sec": 3.1
     },
     {
       "clip": "outputs_baseline/roundtrip_4049556",
-      "analysed_sec": 44.1,
+      "analysed_sec": 44.13,
       "activity_accuracy": 0.776,
       "longest_out_of_bed_gt_sec": 2.2,
       "longest_out_of_bed_pred_sec": 2.8
@@ -242,7 +243,7 @@
       "recall": 1.0,
       "false_per_hour": 0.0,
       "mean_abs_time_error_sec": 0.473,
-      "mean_confirmation_delay_sec": 2.698
+      "mean_confirmation_delay_sec": 2.798
     },
     "return_to_bed": {
       "tp": 1,
@@ -252,10 +253,37 @@
       "recall": 1.0,
       "false_per_hour": 0.0,
       "mean_abs_time_error_sec": 0.66,
-      "mean_confirmation_delay_sec": 10.0
+      "mean_confirmation_delay_sec": 9.8
     }
   },
   "duration": {
-    "activity_macro_abs_error_sec": 1.467
+    "activity_macro_abs_error_sec": 1.46,
+    "activity_totals_sec": {
+      "LYING_IN_BED": {
+        "gt_sec": 20.2,
+        "pred_sec": 18.5,
+        "sum_abs_error_sec": 1.7
+      },
+      "SITTING_ON_BED": {
+        "gt_sec": 52.5,
+        "pred_sec": 43.4,
+        "sum_abs_error_sec": 9.9
+      },
+      "STANDING": {
+        "gt_sec": 4.5,
+        "pred_sec": 11.8,
+        "sum_abs_error_sec": 9.1
+      },
+      "WALKING": {
+        "gt_sec": 7.4,
+        "pred_sec": 9.1,
+        "sum_abs_error_sec": 2.5
+      },
+      "UNKNOWN": {
+        "gt_sec": 12.7,
+        "pred_sec": 14.5,
+        "sum_abs_error_sec": 3.1
+      }
+    }
   }
 }

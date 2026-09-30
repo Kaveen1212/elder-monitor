@@ -54,7 +54,7 @@ t,label,confidence,reason,source
 10.4,SITTING_ON_BED,0.595,upright_on_bed,rules
 10.6,SITTING_ON_BED,0.591,upright_on_bed,rules
 10.8,SITTING_ON_BED,0.574,upright_on_bed,rules
-11.0,UNKNOWN,0.0,identity_uncertain,rules
+11.0,UNKNOWN,0.0,low_confidence,rules
 11.2,SITTING_ON_BED,0.572,upright_on_bed,rules
 11.4,SITTING_ON_BED,0.582,upright_on_bed,rules
 11.6,SITTING_ON_BED,0.577,upright_on_bed,rules

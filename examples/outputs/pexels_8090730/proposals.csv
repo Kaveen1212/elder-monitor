@@ -1,18 +1,18 @@
 t,label,confidence,reason,source
-0.0,LYING_IN_BED,0.45,VLM check across the gap,agent
-0.21,LYING_IN_BED,0.45,VLM check across the gap,agent
-0.42,LYING_IN_BED,0.45,VLM check across the gap,agent
-0.58,LYING_IN_BED,0.45,VLM check across the gap,agent
-0.79,LYING_IN_BED,0.45,VLM check across the gap,agent
-1.0,LYING_IN_BED,0.45,VLM check across the gap,agent
-1.21,LYING_IN_BED,0.45,VLM check across the gap,agent
-1.42,LYING_IN_BED,0.45,VLM check across the gap,agent
-1.58,LYING_IN_BED,0.45,VLM check across the gap,agent
-1.79,LYING_IN_BED,0.45,VLM check across the gap,agent
-2.0,LYING_IN_BED,0.45,VLM check across the gap,agent
-2.21,LYING_IN_BED,0.45,VLM check across the gap,agent
-2.42,LYING_IN_BED,0.45,VLM check across the gap,agent
-2.59,UNKNOWN,0.0,identity_uncertain,rules
+0.0,UNKNOWN,0.0,target_not_selected,rules
+0.21,UNKNOWN,0.0,target_not_selected,rules
+0.42,UNKNOWN,0.0,target_not_selected,rules
+0.58,UNKNOWN,0.0,target_not_selected,rules
+0.79,UNKNOWN,0.0,target_not_selected,rules
+1.0,UNKNOWN,0.0,target_not_selected,rules
+1.21,LYING_IN_BED,0.334,lying_on_bed,rules
+1.42,UNKNOWN,0.2,posture_unclear,rules
+1.58,LYING_IN_BED,0.295,lying_on_bed,rules
+1.79,UNKNOWN,0.2,posture_unclear,rules
+2.0,UNKNOWN,0.0,low_confidence,rules
+2.21,UNKNOWN,0.0,low_confidence,rules
+2.42,LYING_IN_BED,0.368,lying_on_bed,rules
+2.59,UNKNOWN,0.0,low_confidence,rules
 2.79,LYING_IN_BED,0.351,lying_on_bed,rules
 3.0,LYING_IN_BED,0.365,lying_on_bed,rules
 3.21,SITTING_ON_BED,0.364,upright_on_bed,rules
@@ -61,14 +61,14 @@ t,label,confidence,reason,source
 11.8,WALKING,0.3,box_motion,rules
 12.01,WALKING,0.3,box_motion,rules
 12.22,UNKNOWN,0.0,low_keypoints,rules
-12.39,UNKNOWN,0.0,identity_uncertain,rules
+12.39,UNKNOWN,0.0,low_confidence,rules
 12.6,UNKNOWN,0.0,not_detected,rules
 12.8,UNKNOWN,0.0,not_detected,rules
 13.01,UNKNOWN,0.0,not_detected,rules
 13.18,UNKNOWN,0.0,not_detected,rules
 13.39,UNKNOWN,0.0,not_detected,rules
 13.6,UNKNOWN,0.0,not_detected,rules
-13.81,UNKNOWN,0.0,identity_uncertain,rules
+13.81,UNKNOWN,0.0,low_confidence,rules
 14.01,UNKNOWN,0.0,not_detected,rules
 14.18,UNKNOWN,0.0,not_detected,rules
 14.39,UNKNOWN,0.0,not_detected,rules

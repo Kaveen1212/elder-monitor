@@ -6,7 +6,7 @@
       "start_time": "00:00:13",
       "confirmed_time": "00:00:17",
       "start_sec": 13.2,
-      "confirmed_sec": 16.6,
+      "confirmed_sec": 16.8,
       "previous_state": "sitting_on_bed",
       "current_state": "walking",
       "confidence": 0.13,
@@ -30,7 +30,7 @@
             13.2,
             21.2
           ],
-          "finding": "walks away and leaves the camera view; departure confirmed at 16.6s"
+          "finding": "walks away and leaves the camera view; departure confirmed at 16.8s"
         }
       ]
     },
@@ -40,10 +40,10 @@
       "start_time": "00:00:27",
       "confirmed_time": "00:00:37",
       "start_sec": 27.0,
-      "confirmed_sec": 37.0,
+      "confirmed_sec": 36.8,
       "previous_state": "walking",
       "current_state": "lying_in_bed",
-      "confidence": 0.78,
+      "confidence": 0.77,
       "decision": "NORMAL",
       "evidence": []
     }
@@ -61,7 +61,7 @@
       "rule": "EVENT_PENDING",
       "decision": "MONITOR",
       "start_sec": 13.2,
-      "end_sec": 16.6,
+      "end_sec": 16.8,
       "start_time": "00:00:13",
       "end_time": "00:00:17"
     },

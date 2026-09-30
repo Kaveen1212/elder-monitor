@@ -37,6 +37,14 @@
   ],
   "alerts": [
     {
+      "rule": "UNCERTAIN",
+      "decision": "MONITOR",
+      "start_sec": 0.0,
+      "end_sec": 3.8,
+      "start_time": "00:00:00",
+      "end_time": "00:00:04"
+    },
+    {
       "rule": "EVENT_PENDING",
       "decision": "MONITOR",
       "start_sec": 10.59,

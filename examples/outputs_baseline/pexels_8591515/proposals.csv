@@ -50,8 +50,8 @@ t,label,confidence,reason,source
 9.6,LYING_IN_BED,0.94,lying_on_bed,rules
 9.8,LYING_IN_BED,0.831,lying_on_bed,rules
 10.0,UNKNOWN,0.0,not_detected,rules
-10.2,UNKNOWN,0.0,identity_uncertain,rules
-10.4,UNKNOWN,0.0,identity_uncertain,rules
+10.2,UNKNOWN,0.0,low_confidence,rules
+10.4,UNKNOWN,0.0,low_confidence,rules
 10.6,LYING_IN_BED,0.858,lying_on_bed,rules
 10.8,LYING_IN_BED,0.871,lying_on_bed,rules
 11.0,LYING_IN_BED,0.878,lying_on_bed,rules

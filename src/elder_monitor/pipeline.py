@@ -1,11 +1,12 @@
 import platform
 import time
+from importlib.metadata import PackageNotFoundError, version
 from itertools import accumulate
 from pathlib import Path
 
 from . import __version__
 from .agent import ContextAgent
-from .config import config_hash, validate_scene
+from .config import config_hash, validate_config
 from .events import detect_bed_events, guard_verifier
 from .features import Scene, add_box_speed, add_speed, measure
 from .policy import AlertPolicy
@@ -17,6 +18,17 @@ from .vision import PoseTracker, TargetSelector
 from .vlm import QwenVLM
 
 PERCEPTION_KEYS = ("scene", "target", "sampling", "vision", "identity")
+PACKAGES = ("ultralytics", "torch", "transformers", "opencv-python", "numpy", "scipy", "lap")
+
+
+def versions():
+    out = {"python": platform.python_version()}
+    for pkg in PACKAGES:
+        try:
+            out[pkg] = version(pkg)
+        except PackageNotFoundError:
+            pass
+    return out
 
 
 def perceive(reader, scene, cfg, progress=None):
@@ -40,14 +52,17 @@ def perceive(reader, scene, cfg, progress=None):
 
 
 def view_quality(observations, cfg):
-    """Camera-placement check: share of detected samples with too few keypoints (and the worst 10 s window)."""
+    """Camera-placement check: share of detected samples with too few keypoints (and the worst 10 s window),
+    and share of sampling slots with no frame at all (a live stream slower than sampling.fps)."""
     n = max(round(10 * cfg["sampling"]["fps"]), 1)
     low = [o.reason == "low_keypoints" for o in observations]
     c = [0, *accumulate(low)]
     worst = max(c[min(i + n, len(low))] - c[i] for i in range(max(len(low) - n, 0) + 1)) / n
     share = sum(low) / max(sum(o.bbox is not None or o.reason == "low_keypoints" for o in observations), 1)
+    missing = sum(o.reason == "no_frame" for o in observations) / max(len(observations), 1)
+    limit = cfg["policy"]["degraded_view_share"]
     return {"worst_low_keypoint_share_10s": round(worst, 2), "low_keypoint_share": round(share, 2),
-            "degraded": share >= cfg["policy"]["degraded_view_share"]}
+            "missing_frame_share": round(missing, 2), "degraded": share >= limit or missing >= limit}
 
 
 def run_analysis(observations, duration, cfg, use_agent=True, frames=None, scene=None, vlm_factory=None):
@@ -78,6 +93,9 @@ def run_analysis(observations, duration, cfg, use_agent=True, frames=None, scene
         "activity": activity, "bed": bed, "events": fsm["events"], "fsm": fsm,
         "decisions": decisions, "alerts": alerts,
         "trace": agent.trace if agent else [], "vlm_calls": agent.vlm_calls if agent else 0,
+        "vlm_revision": getattr(agent.vlm, "revision", None) if agent else None,
+        "vlm_load_sec": round(agent.vlm_load_sec, 1) if agent else 0.0,
+        "vlm_inference_sec": round(agent.vlm_inference_sec, 1) if agent else 0.0,
         "view": view_quality(observations, cfg),
     }
     result["summary"] = summarize(result)
@@ -86,7 +104,7 @@ def run_analysis(observations, duration, cfg, use_agent=True, frames=None, scene
 
 def analyze(video, cfg, out_dir, use_agent=True, use_vlm=True, reuse=False, overlay=False, observations_path=None,
             progress=None):
-    validate_scene(cfg)
+    validate_config(cfg)
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     reader = VideoReader(video)
@@ -121,8 +139,10 @@ def analyze(video, cfg, out_dir, use_agent=True, use_vlm=True, reuse=False, over
 
     use_agent = use_agent and cfg["agent"]["enabled"]
     use_vlm = use_agent and use_vlm and cfg["vlm"]["enabled"]
+    analysis_started = time.time()
     result = run_analysis(observations, meta["duration"], cfg, use_agent, reader.frame_at, scene,
                           (lambda: QwenVLM(cfg)) if use_vlm else None)
+    analysis_sec = time.time() - analysis_started
     if overlay:
         write_overlay(reader, scene, result, cfg, out / "overlay.mp4")
     portable = {**cfg, "vision": {**cfg["vision"], "tracker": tracker.name}}
@@ -130,11 +150,13 @@ def analyze(video, cfg, out_dir, use_agent=True, use_vlm=True, reuse=False, over
         "schema_version": SCHEMA_VERSION, "code_version": __version__, "mode": "offline",
         "video": str(video), "video_hash": video_hash, "duration_sec": round(meta["duration"], 2),
         "config_hash": config_hash(portable), "pose_model": meta["pose_model"],
-        "vlm_model": cfg["vlm"]["model"] if use_vlm else None,
+        "vlm_model": cfg["vlm"]["model"] if use_vlm else None, "vlm_revision": result["vlm_revision"],
         "agent_enabled": use_agent, "vlm_calls": result["vlm_calls"],
         "sampling_fps": cfg["sampling"]["fps"], "samples": len(observations),
         "perception_sec": meta.get("perception_sec"), "reused_observations": str(cache) if reused else None,
-        "total_runtime_sec": round(time.time() - started, 1), "platform": platform.platform(), "config": portable,
+        "analysis_sec": round(analysis_sec, 1), "vlm_load_sec": result["vlm_load_sec"],
+        "vlm_inference_sec": result["vlm_inference_sec"], "total_runtime_sec": round(time.time() - started, 1),
+        "platform": platform.platform(), "versions": versions(), "config": portable,
     }
     write_outputs(out, result, manifest)
     return result

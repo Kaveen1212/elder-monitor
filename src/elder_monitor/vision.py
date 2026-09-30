@@ -1,8 +1,11 @@
 import math
 from dataclasses import dataclass
+from pathlib import Path
 
 import cv2
 import numpy as np
+
+from .video import file_hash
 
 
 @dataclass
@@ -29,7 +32,10 @@ class PoseTracker:
 
     @property
     def revision(self):
-        return str(getattr(self.model, "ckpt_path", None) or self.model.model_name)
+        path = getattr(self.model, "ckpt_path", None)
+        if path and Path(path).is_file():
+            return f"{Path(path).name} sha256:{file_hash(path)[:12]}"
+        return str(path or self.model.model_name)
 
     def __call__(self, frame):
         r = self.model.track(frame, **self.kwargs)[0]
@@ -63,8 +69,10 @@ def same_body(a, b, kp_conf):
 class TargetSelector:
     """Keeps the monitored resident separate from temporary tracker IDs.
 
-    Other confident people tracked alongside the resident are remembered and never become the resident;
-    duplicate boxes on the resident's own body are not, so they can still pass re-association.
+    Other confident people tracked alongside the resident are remembered and are not re-attached as the resident;
+    duplicate boxes on the resident's own body are not, so they can still pass re-association. A box that keeps the
+    resident's track ID must still be within reach of the last position and look like the resident, so an ID switch
+    becomes identity uncertainty. These are heuristics: similar-looking people who swap IDs can still fool them.
     """
 
     def __init__(self, cfg, scene):
@@ -73,6 +81,7 @@ class TargetSelector:
         self.point = None if t.get("point") is None else (t["point"][0] * scene.width, t["point"][1] * scene.height)
         self.start = t.get("time_sec", 0.0) if self.point is not None else 0.0
         self.min_conf, self.min_sim, self.margin = i["min_det_conf"], i["min_similarity"], i["margin"]
+        self.track_min_sim = i["track_min_similarity"]
         self.max_jump, self.jump_per_sec = i["max_jump"] * scene.height, i["jump_per_sec"] * scene.height
         self.kp_conf = cfg["vision"]["kp_conf"]
         self.selected, self.track_id, self.hist, self.last_pos, self.last_t = False, None, None, None, None
@@ -90,13 +99,17 @@ class TargetSelector:
             return p, True, "selected"
         for p in persons:
             if p.track_id is not None and p.track_id == self.track_id:
-                if p.conf < self.min_conf and self.last_in_bed is False and self.scene.in_bed(self._anchor(p)):
+                phantom = p.conf < self.min_conf and self.last_in_bed is False and self.scene.in_bed(self._anchor(p))
+                if phantom or not self._consistent(t, frame, p):
                     break
                 self._adopt(t, frame, p, persons)
                 return p, True, "tracked"
         candidates = [p for p in persons if p.track_id not in self.others and p.conf >= self.min_conf]
         if not candidates:
-            return None, not persons, "not_detected" if not persons else "identity_uncertain"
+            if not persons:
+                return None, True, "not_detected"
+            weak = all(p.conf < self.min_conf for p in persons)
+            return None, False, "low_confidence" if weak else "identity_uncertain"
         return self._reassociate(t, frame, persons, candidates)
 
     def _initial(self, persons):
@@ -112,15 +125,25 @@ class TargetSelector:
             return max(in_bed, key=lambda p: p.conf)
         return persons[0] if len(persons) == 1 else None
 
+    def _reachable(self, t, p):
+        return math.dist(p.center, self.last_pos) <= self.max_jump + self.jump_per_sec * (t - self.last_t)
+
+    def _similarity(self, frame, p):
+        h = appearance(frame, p.bbox)
+        return None if h is None or self.hist is None else cv2.compareHist(self.hist, h, cv2.HISTCMP_CORREL)
+
+    def _consistent(self, t, frame, p):
+        """Same track ID: the loose floor lets posture changes and partial occlusion through, not another person."""
+        sim = self._similarity(frame, p)
+        return self._reachable(t, p) and (sim is None or sim >= self.track_min_sim)
+
     def _reassociate(self, t, frame, persons, candidates):
-        allowed = self.max_jump + self.jump_per_sec * (t - self.last_t)
         scored = []
         for p in candidates:
-            if math.dist(p.center, self.last_pos) > allowed:
+            if not self._reachable(t, p):
                 continue
-            h = appearance(frame, p.bbox)
-            sim = -1.0 if h is None or self.hist is None else cv2.compareHist(self.hist, h, cv2.HISTCMP_CORREL)
-            scored.append((sim, p))
+            sim = self._similarity(frame, p)
+            scored.append((-1.0 if sim is None else sim, p))
         scored.sort(key=lambda s: s[0], reverse=True)
         if scored and scored[0][0] >= self.min_sim:
             runner_up = scored[1][0] if len(scored) > 1 else -1.0

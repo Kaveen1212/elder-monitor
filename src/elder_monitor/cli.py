@@ -24,7 +24,8 @@ def cmd_analyze(args):
     print("\nSummary")
     print(json.dumps({k: v for k, v in result["summary"].items() if k != "human"}, indent=2))
     if result["view"]["degraded"]:
-        print("\nWARNING: too few keypoints for long stretches; check the camera placement (whole body in view).")
+        print("\nWARNING: too few keypoints or missing frames for long stretches; check the camera placement "
+              "(whole body in view) and the video.")
     print(f"\nOutputs written to {args.output}")
 
 

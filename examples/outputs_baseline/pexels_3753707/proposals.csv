@@ -13,7 +13,7 @@ t,label,confidence,reason,source
 2.2,UNKNOWN,0.0,low_keypoints,rules
 2.4,UNKNOWN,0.0,low_keypoints,rules
 2.6,UNKNOWN,0.0,low_keypoints,rules
-2.8,UNKNOWN,0.0,identity_uncertain,rules
+2.8,UNKNOWN,0.0,low_confidence,rules
 3.0,UNKNOWN,0.0,low_keypoints,rules
 3.2,UNKNOWN,0.0,low_keypoints,rules
 3.4,UNKNOWN,0.0,low_keypoints,rules

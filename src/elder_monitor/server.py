@@ -14,18 +14,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .config import deep_merge, validate_scene
+from .config import deep_merge, validate_config
 from .live import LiveSession, chat_messages, message, pose
 from .pipeline import analyze
 from .reporting import event_record
 
-RUN_KEYS = ("duration_sec", "samples", "sampling_fps", "perception_sec", "total_runtime_sec", "pose_model",
-            "vlm_model", "vlm_calls", "agent_enabled")
+RUN_KEYS = ("duration_sec", "samples", "sampling_fps", "perception_sec", "analysis_sec", "vlm_load_sec",
+            "vlm_inference_sec", "total_runtime_sec", "pose_model", "vlm_model", "vlm_revision", "vlm_calls",
+            "agent_enabled")
 
 
 def scene_config(cfg, bed_polygon):
     out = deep_merge(cfg, {"scene": {"bed_polygon": bed_polygon}}) if bed_polygon else cfg
-    validate_scene(out)
+    validate_config(out)
     return out
 
 

@@ -104,7 +104,7 @@ t,label,confidence,reason,source
 20.42,SITTING_ON_BED,0.494,upright_on_bed,rules
 20.58,UNKNOWN,0.0,identity_uncertain,rules
 20.79,UNKNOWN,0.0,identity_uncertain,rules
-21.0,UNKNOWN,0.0,identity_uncertain,rules
+21.0,UNKNOWN,0.0,low_confidence,rules
 21.21,UNKNOWN,0.0,identity_uncertain,rules
 21.42,UNKNOWN,0.0,identity_uncertain,rules
 21.58,UNKNOWN,0.0,identity_uncertain,rules

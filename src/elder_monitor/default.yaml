@@ -28,6 +28,7 @@ identity:
   min_det_conf: 0.5          # a detection must be this confident to be selected or re-attached as the resident
   min_similarity: 0.5        # HSV histogram correlation needed to re-attach a lost target
   margin: 0.1                # best candidate must beat the runner-up by this much
+  track_min_similarity: 0.3  # a box keeping the resident's track ID below this similarity is an ID switch (dev clips: min 0.52)
   max_jump: 0.25             # allowed re-attach distance (fraction of frame height) ...
   jump_per_sec: 0.5          # ... growing with time since the target was last seen
 

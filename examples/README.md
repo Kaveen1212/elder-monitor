@@ -26,7 +26,12 @@ held-out test. The people are adult actors (one older man), the clips are 7–44
 return to bed. The run shows the pipeline working end to end on real video; it does not establish performance on
 elderly residents or on long overnight recordings.
 
-## Results (4 labelled clips, 97.2 s, full system with VLM enabled)
+## Results (4 labelled clips, 97.25 s labelled and analysed, full system with VLM enabled)
+
+These numbers come from a fresh run of the current code: new perception and analysis, after the review of commit
+`e1c709a` in FAILURE_CASES.md. Rescoring the saved `e1c709a` predictions with the corrected evaluator gives the same
+accuracies, events and per-state totals. Only the analysed time (97.2 → 97.25 s) and the duration errors
+(0.667 → 0.660 s, baseline 1.467 → 1.460 s) move, because they are no longer computed from rounded values.
 
 | Metric | Value |
 |---|---|
@@ -34,20 +39,21 @@ elderly residents or on long overnight recordings.
 | Activity macro-F1 | 0.801 |
 | Bed-status accuracy / macro-F1 | 0.932 / 0.882 |
 | Predicted UNKNOWN share | 0.149 (ground truth has 0.131: the resident is out of view) |
-| Bed exits | TP 4, FP 0, FN 0: precision 1.0, recall 1.0; occurrence error 0.47 s; confirmation delay 2.7 s |
-| Returns to bed | TP 1, FP 0, FN 0; occurrence error 0.66 s; confirmed 10 s after she sits down (she sits for 8 s, then the lying rule needs 2 s) |
-| Activity duration error (macro mean of per-clip absolute errors) | 0.67 s |
+| Bed exits | TP 4, FP 0, FN 0: precision 1.0, recall 1.0; occurrence error 0.47 s; confirmation delay 2.8 s |
+| Returns to bed | TP 1, FP 0, FN 0; occurrence error 0.66 s; confirmed 9.8 s after she sits down (she sits for 8 s, then the lying rule needs 2 s of lying) |
+| Activity duration error (macro mean of per-clip absolute errors) | 0.66 s |
 
-Per state (seconds over the four clips):
+Per state (seconds over the four clips). The total error can hide errors that cancel between clips, so the last
+numeric column adds up the per-clip absolute errors:
 
-| State | Ground truth | Predicted | Error | Precision | Recall |
-|---|---|---|---|---|---|
-| LYING_IN_BED | 20.2 | 18.5 | −1.7 | 0.98 | 0.90 |
-| SITTING_ON_BED | 52.5 | 50.8 | −1.7 | 0.98 | 0.95 |
-| STANDING | 4.5 | 4.4 | −0.1 | 0.55 | 0.53 |
-| WALKING | 7.4 | 9.1 | +1.7 | 0.65 | 0.80 |
-| UNKNOWN | 12.7 | 14.5 | +1.8 | 0.80 | 0.91 |
-| bed status IN_BED / OUT_OF_BED / UNKNOWN | 72.7 / 11.9 / 12.7 | 69.3 / 13.5 / 14.5 | −3.4 / +1.6 / +1.8 | | |
+| State | Ground truth | Predicted | Error of the totals | Sum of per-clip errors | Precision | Recall |
+|---|---|---|---|---|---|---|
+| LYING_IN_BED | 20.2 | 18.5 | −1.7 | 1.7 | 0.98 | 0.90 |
+| SITTING_ON_BED | 52.5 | 50.8 | −1.7 | 2.5 | 0.98 | 0.95 |
+| STANDING | 4.5 | 4.4 | −0.1 | 2.1 | 0.55 | 0.53 |
+| WALKING | 7.4 | 9.1 | +1.7 | 2.5 | 0.65 | 0.80 |
+| UNKNOWN | 12.7 | 14.5 | +1.8 | 3.1 | 0.80 | 0.91 |
+| bed status IN_BED / OUT_OF_BED / UNKNOWN | 72.7 / 11.9 / 12.7 | 69.3 / 13.5 / 14.5 | −3.4 / +1.6 / +1.8 | | | |
 
 No confusion is larger than 1.8 s any more (see
 [evaluation/outputs/confusion_matrix.png](evaluation/outputs/confusion_matrix.png)). The largest are the first second
@@ -61,7 +67,7 @@ figures (`python examples/make_figures.py`), the fix for each, the numbers befor
 Before those fixes the same clips gave activity accuracy 0.802, bed-status accuracy 0.829 and 0 of 1 returns.
 
 **Agent vs. baseline.** `--no-agent` gives activity accuracy 0.826, bed-status accuracy 0.856 and a duration error of
-1.47 s, with the same exits and return ([evaluation/outputs_baseline](evaluation/outputs_baseline/metrics.json)). The
+1.46 s, with the same exits and return ([evaluation/outputs_baseline](evaluation/outputs_baseline/metrics.json)). The
 difference is the agent's `UPRIGHT_ON_BED_REGION` review (failure case 1): on the three windows where edge-sitting
 facing the camera reads as standing, it asked Qwen2.5-VL about 3 frames each, got "sitting / bed" all 9 times, and
 relabelled them SITTING_ON_BED. The agent without the VLM (`--no-vlm`) gives the baseline's numbers. Every context
@@ -73,8 +79,14 @@ blanket-covered gap between lying spans, a long in-bed gap for the VLM) are cove
 `tests/test_pipeline.py`. An earlier apparent agent gain (0.788 vs 0.404) turned out to be the agent masking an identity
 bug in the target selector, which has since been fixed (failure case 5a).
 
-**Runtime** (RTX 4090): perception 4–6 s per clip at 5 fps; the temporal engine, events and policy take milliseconds;
-loading Qwen2.5-VL takes about 25 s, then about 1.2 s per VLM call (15 calls over the seven clips).
+**Runtime** (RTX 4090, from `run_manifest.json`; each clip runs in its own process):
+
+| Stage | Time |
+|---|---|
+| Perception (YOLO11n-pose + ByteTrack at 5 fps, model loading included) | 3.9–6.3 s per clip |
+| Analysis of cached observations without the VLM (temporal engine, agent geometry, events, policy) | under 0.1 s per clip |
+| Loading Qwen2.5-VL, once per process that needs it | 25.0–26.1 s |
+| VLM inference | 18.3 s for the 15 calls over the seven clips, about 1.2 s per call |
 
 ## Other clips
 
@@ -95,7 +107,9 @@ How the test was set up:
 - The bed polygons (`configs/pexels_<id>.yaml`) were drawn from the video frames.
 - The labels (`annotations/pexels_<id>.json`) were drafted blind, before the system was run on these clips, by two
   independent AI annotators: one labelled, the second made its own timeline first and then checked every boundary.
-- No code or threshold was changed after seeing the results.
+- The first held-out run used commit `e1c709a`. After it, a code review found seven problems (FAILURE_CASES.md,
+  "Review of commit e1c709a"). They were fixed and checked on the development clips only. No threshold was tuned on
+  these clips, and the fixed code was run on them once.
 - The labels have not been reviewed by a person yet.
 
 | Clip | What it tests | Page | Video file |
@@ -114,17 +128,30 @@ How the test was set up:
 | `pexels_8088284` | sick older man sitting up in bed, a caregiver sitting beside him | [page](https://www.pexels.com/video/an-elderly-man-sick-in-bed-8088284/) | [mp4](https://videos.pexels.com/video-files/8088284/8088284-hd_1080_2048_24fps.mp4) |
 | `pexels_6130024` | hospital patient in bed, a nurse working beside it, moving camera | [page](https://www.pexels.com/video/healthcare-worker-taking-care-of-sick-patient-6130024/) | [mp4](https://videos.pexels.com/video-files/6130024/6130024-hd_1920_1080_30fps.mp4) |
 
-**Results** (278.7 s):
+**Results** (278.66 s labelled; every clip is covered in full, so the analysed time is the same). The first column
+is the current code. The second is the `e1c709a` predictions, rescored with the corrected evaluator:
 
-| Metric | Full system (VLM) | `--no-agent` |
-|---|---|---|
-| Activity accuracy / macro-F1 | 0.724 / 0.578 | 0.502 / 0.438 |
-| Bed-status accuracy | 0.940 | 0.670 |
-| Bed exits | 1 of 3 found, 0 false | 1 of 3 found, 0 false |
-| Returns to bed | 2 of 3 found (0.55 s timing error), 0 false | 1 of 3 found, 0 false |
-| False exits or returns on the 7 clips without any | 0 | 0 |
-| ALERTs | none (none expected) | none |
-| Activity duration error | 2.15 s | 5.06 s |
+| Metric | Full system (VLM), current code | Full system, `e1c709a` | `--no-agent` (both) |
+|---|---|---|---|
+| Activity accuracy / macro-F1 | 0.667 / 0.504 | 0.724 / 0.578 | 0.502 / 0.438 |
+| Bed-status accuracy | 0.836 | 0.940 | 0.670 |
+| Predicted UNKNOWN share (labels 0.020) | 0.170 | 0.066 | 0.338 |
+| Bed exits | 1 of 3 found, 0 false | 1 of 3 found, 0 false | 1 of 3 found, 0 false |
+| Returns to bed | 1 of 3 found (0.70 s timing error), 0 false | 2 of 3 found, 0 false | 1 of 3 found, 0 false |
+| False exits or returns on the 7 clips without any | 0 | 0 | 0 |
+| ALERTs | none (none expected) | none | none |
+| Activity duration error | 2.84 s | 2.16 s | 5.06 s |
+
+The drop comes from two clips, both through fix 3: the VLM now answers only about an identified resident.
+- In `6130024` the config selects the resident by a clicked point at 11.5 s, and a nurse is in view from the start,
+  so nobody is selected before 11.5 s. Before, the VLM was asked about "any person" and relabelled those 11.5 s as
+  lying in bed. It was right, but the resident had not been identified, so that time is now `UNKNOWN`.
+- In `8539659` the resident lies down and is no longer detected. The VLM is asked about the outlined bed region in
+  3 frames. One of the 3 answers says nobody is visible, so there is no agreement and the gap stays `UNKNOWN`.
+  The return is still pending at the end.
+
+The earlier, higher numbers partly relied on VLM answers about people the system had not identified. The current
+numbers are the ones to quote.
 
 | Clip | Expected | Full system | Activity accuracy |
 |---|---|---|---|
@@ -133,24 +160,29 @@ How the test was set up:
 | `8090730` | exit at 9.7 s | exit at 10.6 s, confirmed | 0.45 |
 | `9615483` | no event | no event; lying and sitting flicker in the dim, handheld view | 0.37 |
 | `8539664` | return at 8.4 s | **missed**: the tracker loses him when he falls back behind the footboard. In a debug re-run his detections scored 0.14–0.41, below the 0.5 needed to re-attach the resident, so 8.8–15.0 s is `UNKNOWN` and the return is still pending at the end | 0.18 |
-| `8539659` | return at 7.2 s | return at 7.6 s (the agent's VLM check filled the gap; the baseline misses it) | 0.63 |
-| `8591515` | return at 7.9 s | return at 8.6 s; the projected figure is masked with an ignore polygon | 0.95 |
+| `8539659` | return at 7.2 s | **missed**: he is not detected once he lies down; the VLM answers about the outlined bed disagree (1 of 3 sees nobody), so 7.6–15.2 s stays `UNKNOWN` and the return is still pending at the end (`e1c709a` found it, 0.63) | 0.13 |
+| `8591515` | return at 7.9 s | return at 8.6 s, confirmed at 10.4 s; the projected figure is masked with an ignore polygon | 0.95 |
 | `7505324` | no event | no event; sits up 1.1 s early | 0.93 |
 | `10608105` | no event | no event; lying at the far pillow read as sitting for 6 s | 0.70 |
 | `5983705` | no event | no event | 0.99 |
 | `8862331` | no event | no event; too few joints for the rules (view warning), the VLM confirmed sitting on the bed | 1.00 (baseline 0.00) |
-| `8088284` | no event | no event; the resident is kept with the caregiver beside him. Nobody is selected before the calibrated target time (6 s), and the VLM check read that gap as lying | 0.77 |
-| `6130024` | no event | no event; the nurse is never taken for the patient; her 3 s lean forward is missed (view warning) | 0.76 (baseline 0.00) |
+| `8088284` | no event | no event; the resident is kept with the caregiver beside him. Nobody is selected before the calibrated target time (6 s), and that gap stays `UNKNOWN` | 0.77 |
+| `6130024` | no event | no event; the nurse is not taken for the patient. The patient is selected at the calibrated target time (11.5 s), so 0–11.5 s is `UNKNOWN`; the VLM confirmed lying for the rest (view warning) | 0.14 (`e1c709a` 0.76, baseline 0.00) |
 
 What this shows:
 - On new footage the system never raised a false exit, a false return or an ALERT. That includes sitting up,
   kneeling on the bed, edge-sitting and two caregivers.
 - Its main weakness is keeping the resident's identity when a caregiver holds them or furniture hides them. The
   selector is strict on purpose (a detection must reach confidence 0.5 before it becomes the resident; the duvet
-  "phantom" in failure case 3 scored 0.36), so it says `UNKNOWN` / MONITOR instead of guessing. The cost is two of
-  the three missed events.
-- The agent's VLM checks matter more here than on the development clips (0.724 vs 0.502), mainly on close-ups where
-  the rules have too few joints.
+  "phantom" in failure case 3 scored 0.36), so it says `UNKNOWN` / MONITOR instead of guessing. Three of the four
+  missed events come from losing the resident: a caregiver holding her, the footboard, and lying down out of
+  detection. The fourth clip ends 0.7 s after the stand-up.
+- The agent still helps more here than on the development clips (0.667 vs 0.502 without it), mainly through VLM
+  checks of close-ups where the rules have too few joints (`8862331`: 1.00 vs 0.00).
+- Total seconds per state can hide large errors that cancel. With the `e1c709a` predictions the lying totals
+  differed by only 0.4 s (77.4 s labelled, 76.9 s predicted), yet the per-clip lying errors added up to 33.9 s.
+  With the current code the totals are 77.4 s and 47.9 s, and the per-clip errors add up to 36.7 s.
+  `metrics.json` (`duration.activity_totals_sec`) reports both.
 - The development-clip accuracy (0.902) was measured on the clips used for tuning. Expect performance on new cameras
   to be closer to these held-out numbers.
 

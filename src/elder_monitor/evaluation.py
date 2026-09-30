@@ -1,5 +1,6 @@
 import csv
 import json
+import math
 from collections import Counter
 from itertools import groupby, pairwise
 from pathlib import Path
@@ -11,6 +12,10 @@ from .reporting import fmt_clock
 from .schemas import ACTIVITY_STATES, BED_STATES, EVENT_TYPES, OUT_OF_BED, UNKNOWN, Segment
 from .temporal import bed_timeline, durations
 from .video import VideoReader
+
+# Prediction and annotation must cover the same time. Timelines are written with 2 decimals, so this only
+# absorbs rounding; anything larger is a truncated or mismatched run and is rejected.
+COVERAGE_TOLERANCE_SEC = 0.05
 
 
 def parse_time(v):
@@ -24,18 +29,23 @@ def parse_time(v):
     return sec
 
 
-def _labelled(items, labels, name):
-    segs = sorted((Segment(parse_time(a["start"]), parse_time(a["end"]), a["label"].upper()) for a in items),
-                  key=lambda s: s.start)
+def _checked(segs, labels, name):
+    """Known labels, finite ordered intervals, contiguous from 0 with no gap or overlap."""
     for s in segs:
-        if s.label not in labels or s.end <= s.start:
+        if s.label not in labels or not (math.isfinite(s.start) and math.isfinite(s.end)) or s.end <= s.start:
             raise ValueError(f"{name}: bad interval {s.start}-{s.end} {s.label}")
-    if segs and abs(segs[0].start) > 1e-6:
+    if not segs or abs(segs[0].start) > 1e-6:
         raise ValueError(f"{name}: labels must start at 0 (use UNKNOWN for unlabelled time)")
     for a, b in pairwise(segs):
         if abs(b.start - a.end) > 1e-6:
-            raise ValueError(f"{name}: intervals must be contiguous; check {a.end} - {b.start}")
+            raise ValueError(f"{name}: intervals must be in order without gaps or overlaps; check {a.end} - {b.start}")
     return segs
+
+
+def _labelled(items, labels, name):
+    segs = sorted((Segment(parse_time(a["start"]), parse_time(a["end"]), a["label"].upper()) for a in items),
+                  key=lambda s: s.start)
+    return _checked(segs, labels, name)
 
 
 def load_annotations(path):
@@ -43,8 +53,9 @@ def load_annotations(path):
     activity = _labelled(d["activity"], ACTIVITY_STATES, path)
     bed = _labelled(d["bed"], BED_STATES, path) if "bed" in d else bed_timeline(activity)
     duration = parse_time(d["duration"]) if "duration" in d else activity[-1].end
-    if activity[-1].end < duration - 1e-6:
-        raise ValueError(f"{path}: labels end at {activity[-1].end}, before the duration {duration}")
+    for layer in (activity, bed):
+        if abs(layer[-1].end - duration) > COVERAGE_TOLERANCE_SEC:
+            raise ValueError(f"{path}: labels end at {layer[-1].end}, not at the duration {duration}")
     events = [{"event": e["event"].lower(), "time": parse_time(e["time"])} for e in d.get("events", [])]
     for e in events:
         if e["event"] not in EVENT_TYPES or not 0 <= e["time"] <= duration:
@@ -52,28 +63,36 @@ def load_annotations(path):
     return {"duration": duration, "activity": activity, "bed": bed, "events": events}
 
 
-def _read_segments(path):
+def _read_segments(path, labels):
     with open(path, newline="", encoding="utf-8") as f:
-        return [Segment(float(r["start_sec"]), float(r["end_sec"]), r["label"]) for r in csv.DictReader(f)]
+        segs = [Segment(float(r["start_sec"]), float(r["end_sec"]), r["label"]) for r in csv.DictReader(f)]
+    return _checked(segs, labels, path)
 
 
 def load_predictions(pred_dir):
+    """Timelines and events of one analysed video; its duration is the timeline's own end, not the rounded
+    summary value."""
     d = Path(pred_dir)
-    summary = json.loads((d / "summary.json").read_text(encoding="utf-8"))
+    activity = _read_segments(d / "timeline.csv", ACTIVITY_STATES)
+    bed = _read_segments(d / "bed_timeline.csv", BED_STATES)
+    duration = activity[-1].end
+    if abs(bed[-1].end - duration) > COVERAGE_TOLERANCE_SEC:
+        raise ValueError(f"{d}: activity ends at {duration}s but bed status at {bed[-1].end}s")
     events = json.loads((d / "events.json").read_text(encoding="utf-8"))["bed_events"]
-    return {
-        "duration": summary["observation_duration_sec"],
-        "activity": _read_segments(d / "timeline.csv"),
-        "bed": _read_segments(d / "bed_timeline.csv"),
-        "events": [{"event": e["event"], "time": e["start_sec"], "confirmed": e["confirmed_sec"]} for e in events],
-    }
+    events = [{"event": e["event"], "time": e["start_sec"], "confirmed": e["confirmed_sec"]} for e in events]
+    for e in events:
+        times = (e["time"], e["confirmed"])
+        if e["event"] not in EVENT_TYPES or not all(isinstance(v, (int, float)) and math.isfinite(v) for v in times) \
+                or not 0 <= e["time"] <= e["confirmed"] <= duration + COVERAGE_TOLERANCE_SEC:
+            raise ValueError(f"{d}: bad event {e}")
+    return {"duration": duration, "activity": activity, "bed": bed, "events": events}
 
 
 def _cut(x, T):
+    """Trim timelines to T. Only rounding-sized overhangs reach here, and no event is dropped."""
     def cut(segs):
         return [Segment(s.start, min(s.end, T), s.label) for s in segs if s.start < T]
-    return {**x, "activity": cut(x["activity"]), "bed": cut(x["bed"]),
-            "events": [e for e in x["events"] if e["time"] <= T]}
+    return {**x, "activity": cut(x["activity"]), "bed": cut(x["bed"])}
 
 
 def to_grid(segments, T, res, labels):
@@ -140,7 +159,10 @@ def evaluate(pred_dirs, ann_paths, out_dir, tolerance=2.0, resolution=0.1, min_e
     for n, (pred_dir, ann_path) in enumerate(zip(pred_dirs, ann_paths)):
         gt, pred = load_annotations(ann_path), load_predictions(pred_dir)
         clip, video = str(pred_dir), videos[n] if videos else None
-        T = min(gt["duration"], pred["duration"])
+        T = gt["duration"]
+        if abs(pred["duration"] - T) > COVERAGE_TOLERANCE_SEC:
+            raise ValueError(f"{pred_dir} covers {pred['duration']:.2f}s but {ann_path} labels {T:.2f}s; "
+                             "analyse the whole video (or correct the annotation duration) before evaluating")
         gt, pred = _cut(gt, T), _cut(pred, T)
         total_T += T
         g_act, p_act = (to_grid(x["activity"], T, resolution, ACTIVITY_STATES) for x in (gt, pred))
@@ -163,11 +185,11 @@ def evaluate(pred_dirs, ann_paths, out_dir, tolerance=2.0, resolution=0.1, min_e
         for layer, keys in (("activity", ACTIVITY_STATES), ("bed", BED_STATES)):
             gd, pd = durations(gt[layer], keys), durations(pred[layer], keys)
             for key in keys:
-                duration_rows.append({"clip": clip, "layer": layer, "state": key, "gt_sec": round(gd[key], 1),
-                                      "pred_sec": round(pd[key], 1), "signed_error_sec": round(pd[key] - gd[key], 1),
-                                      "abs_error_sec": round(abs(pd[key] - gd[key]), 1)})
+                duration_rows.append({"clip": clip, "layer": layer, "state": key, "gt_sec": gd[key],
+                                      "pred_sec": pd[key], "signed_error_sec": pd[key] - gd[key],
+                                      "abs_error_sec": abs(pd[key] - gd[key])})
         longest = [max((s.duration for s in x["bed"] if s.label == OUT_OF_BED), default=0.0) for x in (gt, pred)]
-        clips.append({"clip": clip, "analysed_sec": round(T, 1),
+        clips.append({"clip": clip, "analysed_sec": round(T, 2),
                       "activity_accuracy": _r((g_act == p_act).mean()) if len(g_act) else None,
                       "longest_out_of_bed_gt_sec": round(longest[0], 1),
                       "longest_out_of_bed_pred_sec": round(longest[1], 1)})
@@ -176,13 +198,18 @@ def evaluate(pred_dirs, ann_paths, out_dir, tolerance=2.0, resolution=0.1, min_e
 
     act_classes, act_macro = class_metrics(cm_act, ACTIVITY_STATES)
     bed_classes, bed_macro = class_metrics(cm_bed, BED_STATES)
-    act_errors = [r["abs_error_sec"] for r in duration_rows
-                  if r["layer"] == "activity" and (r["gt_sec"] or r["pred_sec"])]
+    act_rows = [r for r in duration_rows if r["layer"] == "activity" and (r["gt_sec"] or r["pred_sec"])]
+    act_errors = [r["abs_error_sec"] for r in act_rows]
+    per_state = {}
+    for r in act_rows:
+        s = per_state.setdefault(r["state"], {"gt_sec": 0.0, "pred_sec": 0.0, "sum_abs_error_sec": 0.0})
+        s["gt_sec"], s["pred_sec"] = s["gt_sec"] + r["gt_sec"], s["pred_sec"] + r["pred_sec"]
+        s["sum_abs_error_sec"] += r["abs_error_sec"]
     total = cm_act.sum()
     metrics = {
         "protocol": {"time_resolution_sec": resolution, "event_tolerance_sec": tolerance,
                      "event_time": "occurrence start (not confirmation)", "clips": len(clips),
-                     "analysed_sec": round(total_T, 1)},
+                     "analysed_sec": round(total_T, 2), "coverage_tolerance_sec": COVERAGE_TOLERANCE_SEC},
         "clips": clips,
         "activity": {"accuracy": _r(np.trace(cm_act) / total) if total else None, "macro_f1": act_macro,
                      "predicted_unknown_share": _r(cm_act[:, ACTIVITY_STATES.index(UNKNOWN)].sum() / total)
@@ -193,7 +220,8 @@ def evaluate(pred_dirs, ann_paths, out_dir, tolerance=2.0, resolution=0.1, min_e
                        "macro_f1": bed_macro, "per_class": bed_classes,
                        "confusion_sec": {"labels": list(BED_STATES), "rows_gt_cols_pred": cm_bed.round(1).tolist()}},
         "events": {},
-        "duration": {"activity_macro_abs_error_sec": _r(np.mean(act_errors)) if act_errors else None},
+        "duration": {"activity_macro_abs_error_sec": _r(np.mean(act_errors)) if act_errors else None,
+                     "activity_totals_sec": {k: {m: round(v, 1) for m, v in s.items()} for k, s in per_state.items()}},
     }
     hours = total_T / 3600
     for event, c in counts.items():
@@ -211,7 +239,7 @@ def evaluate(pred_dirs, ann_paths, out_dir, tolerance=2.0, resolution=0.1, min_e
     with open(out / "duration_errors.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=list(duration_rows[0]) if duration_rows else ["clip"])
         w.writeheader()
-        w.writerows(duration_rows)
+        w.writerows({k: round(v, 2) if isinstance(v, float) else v for k, v in r.items()} for r in duration_rows)
     _write_failures(out, failures)
     _plot_confusion(cm_act, ACTIVITY_STATES, out / "confusion_matrix.png")
     return metrics
