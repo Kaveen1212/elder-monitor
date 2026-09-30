@@ -1,0 +1,4 @@
+start,end,start_sec,end_sec,duration_sec,label
+00:00,00:02,0.0,2.0,2.0,UNKNOWN
+00:02,00:07,2.0,7.01,5.0,IN_BED
+00:07,00:10,7.01,10.01,3.0,UNKNOWN

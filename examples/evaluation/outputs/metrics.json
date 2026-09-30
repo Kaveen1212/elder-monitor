@@ -1,0 +1,261 @@
+{
+  "protocol": {
+    "time_resolution_sec": 0.1,
+    "event_tolerance_sec": 2.0,
+    "event_time": "occurrence start (not confirmation)",
+    "clips": 4,
+    "analysed_sec": 97.2
+  },
+  "clips": [
+    {
+      "clip": "outputs/pexels_4049556",
+      "analysed_sec": 17.6,
+      "activity_accuracy": 0.875,
+      "longest_out_of_bed_gt_sec": 2.2,
+      "longest_out_of_bed_pred_sec": 2.8
+    },
+    {
+      "clip": "outputs/pexels_4052924",
+      "analysed_sec": 27.9,
+      "activity_accuracy": 0.978,
+      "longest_out_of_bed_gt_sec": 3.0,
+      "longest_out_of_bed_pred_sec": 2.6
+    },
+    {
+      "clip": "outputs/pexels_8090735",
+      "analysed_sec": 7.7,
+      "activity_accuracy": 0.766,
+      "longest_out_of_bed_gt_sec": 2.3,
+      "longest_out_of_bed_pred_sec": 3.1
+    },
+    {
+      "clip": "outputs/roundtrip_4049556",
+      "analysed_sec": 44.1,
+      "activity_accuracy": 0.889,
+      "longest_out_of_bed_gt_sec": 2.2,
+      "longest_out_of_bed_pred_sec": 2.8
+    }
+  ],
+  "activity": {
+    "accuracy": 0.902,
+    "macro_f1": 0.801,
+    "predicted_unknown_share": 0.149,
+    "per_class": {
+      "LYING_IN_BED": {
+        "precision": 0.978,
+        "recall": 0.896,
+        "f1": 0.935,
+        "support_sec": 20.2
+      },
+      "SITTING_ON_BED": {
+        "precision": 0.98,
+        "recall": 0.949,
+        "f1": 0.964,
+        "support_sec": 52.5
+      },
+      "SITTING_OUTSIDE_BED": {
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "support_sec": 0.0
+      },
+      "STANDING": {
+        "precision": 0.545,
+        "recall": 0.533,
+        "f1": 0.539,
+        "support_sec": 4.5
+      },
+      "WALKING": {
+        "precision": 0.648,
+        "recall": 0.797,
+        "f1": 0.715,
+        "support_sec": 7.4
+      },
+      "OUT_OF_BED": {
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "support_sec": 0.0
+      },
+      "LYING_ON_FLOOR": {
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "support_sec": 0.0
+      },
+      "UNKNOWN": {
+        "precision": 0.8,
+        "recall": 0.913,
+        "f1": 0.853,
+        "support_sec": 12.7
+      }
+    },
+    "confusion_sec": {
+      "labels": [
+        "LYING_IN_BED",
+        "SITTING_ON_BED",
+        "SITTING_OUTSIDE_BED",
+        "STANDING",
+        "WALKING",
+        "OUT_OF_BED",
+        "LYING_ON_FLOOR",
+        "UNKNOWN"
+      ],
+      "rows_gt_cols_pred": [
+        [
+          18.1,
+          0.3,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.8
+        ],
+        [
+          0.4,
+          49.8,
+          0.0,
+          1.2,
+          0.7,
+          0.0,
+          0.0,
+          0.4
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.7,
+          0.0,
+          2.4,
+          1.4,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.8,
+          5.9,
+          0.0,
+          0.0,
+          0.7
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.1,
+          0.0,
+          0.0,
+          11.6
+        ]
+      ]
+    }
+  },
+  "bed_status": {
+    "accuracy": 0.932,
+    "macro_f1": 0.882,
+    "per_class": {
+      "IN_BED": {
+        "precision": 0.99,
+        "recall": 0.944,
+        "f1": 0.966,
+        "support_sec": 72.7
+      },
+      "OUT_OF_BED": {
+        "precision": 0.778,
+        "recall": 0.882,
+        "f1": 0.827,
+        "support_sec": 11.9
+      },
+      "UNKNOWN": {
+        "precision": 0.8,
+        "recall": 0.913,
+        "f1": 0.853,
+        "support_sec": 12.7
+      }
+    },
+    "confusion_sec": {
+      "labels": [
+        "IN_BED",
+        "OUT_OF_BED",
+        "UNKNOWN"
+      ],
+      "rows_gt_cols_pred": [
+        [
+          68.6,
+          1.9,
+          2.2
+        ],
+        [
+          0.7,
+          10.5,
+          0.7
+        ],
+        [
+          0.0,
+          1.1,
+          11.6
+        ]
+      ]
+    }
+  },
+  "events": {
+    "bed_exit": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "false_per_hour": 0.0,
+      "mean_abs_time_error_sec": 0.473,
+      "mean_confirmation_delay_sec": 2.698
+    },
+    "return_to_bed": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "false_per_hour": 0.0,
+      "mean_abs_time_error_sec": 0.66,
+      "mean_confirmation_delay_sec": 10.0
+    }
+  },
+  "duration": {
+    "activity_macro_abs_error_sec": 0.667
+  }
+}

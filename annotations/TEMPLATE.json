@@ -1,0 +1,18 @@
+{
+  "video": "data/demo.mp4",
+  "duration": "15:00",
+  "activity": [
+    {"start": "00:00", "end": "04:32", "label": "LYING_IN_BED"},
+    {"start": "04:32", "end": "05:08", "label": "SITTING_ON_BED"},
+    {"start": "05:08", "end": "05:20", "label": "STANDING"},
+    {"start": "05:20", "end": "07:41", "label": "WALKING"},
+    {"start": "07:41", "end": "09:15", "label": "SITTING_OUTSIDE_BED"},
+    {"start": "09:15", "end": "09:42", "label": "WALKING"},
+    {"start": "09:42", "end": "10:01", "label": "SITTING_ON_BED"},
+    {"start": "10:01", "end": "15:00", "label": "LYING_IN_BED"}
+  ],
+  "events": [
+    {"event": "bed_exit", "time": "05:08"},
+    {"event": "return_to_bed", "time": "09:42"}
+  ]
+}

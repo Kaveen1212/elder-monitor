@@ -1,0 +1,8 @@
+# Example scene config. Replace the geometry with the output of:
+#   python -m elder_monitor calibrate --video data/demo.mp4 --output configs/demo.yaml
+scene:
+  bed_polygon: [[0.30, 0.45], [0.78, 0.45], [0.82, 0.85], [0.26, 0.85]]
+  chair_polygons: []
+target:
+  point: null
+  time_sec: 0.0

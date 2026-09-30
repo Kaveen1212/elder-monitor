@@ -1,0 +1,48 @@
+{
+  "observation_duration_sec": 21.4,
+  "activity_duration_sec": {
+    "lying_in_bed": 0.0,
+    "sitting_on_bed": 6.0,
+    "sitting_outside_bed": 9.6,
+    "standing": 0.0,
+    "walking": 0.0,
+    "out_of_bed": 0.0,
+    "lying_on_floor": 0.0,
+    "unknown": 5.8
+  },
+  "bed_exit_count": 0,
+  "bed_return_count": 0,
+  "total_in_bed_sec": 6.0,
+  "total_out_of_bed_sec": 9.6,
+  "total_unknown_bed_sec": 5.8,
+  "longest_out_of_bed_period_sec": 5.6,
+  "final_state": "sitting_outside_bed",
+  "final_bed_status": "OUT_OF_BED",
+  "final_decision": "NORMAL",
+  "alert_count": 0,
+  "monitor_count": 1,
+  "view_quality": {
+    "worst_low_keypoint_share_10s": 0.5,
+    "low_keypoint_share": 0.34,
+    "degraded": true
+  },
+  "human": {
+    "total_observation_time": "21s",
+    "activity_summary": {
+      "lying_in_bed": "0s",
+      "sitting_on_bed": "6s",
+      "sitting_outside_bed": "10s",
+      "standing": "0s",
+      "walking": "0s",
+      "out_of_bed": "0s",
+      "lying_on_floor": "0s",
+      "unknown": "6s"
+    },
+    "bed_summary": {
+      "time_in_bed": "6s",
+      "time_out_of_bed": "10s",
+      "time_unknown": "6s",
+      "bed_exit_count": 0
+    }
+  }
+}

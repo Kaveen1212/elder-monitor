@@ -1,0 +1,18 @@
+clip,kind,start_sec,end_sec,ground_truth,predicted
+outputs/pexels_7938959,missed_bed_exit,6.1,6.1,bed_exit,no event
+outputs/pexels_4052925,missed_bed_exit,20.9,20.9,bed_exit,no event
+outputs/pexels_8539664,missed_return_to_bed,8.4,8.4,return_to_bed,no event
+outputs/pexels_8539664,state,6.4,15.0,LYING_IN_BED,UNKNOWN
+outputs/pexels_9615483,state,22.8,31.4,SITTING_ON_BED,LYING_IN_BED
+outputs/pexels_8090730,state,0.0,7.2,SITTING_ON_BED,LYING_IN_BED
+outputs/pexels_10608105,state,0.0,6.9,LYING_IN_BED,SITTING_ON_BED
+outputs/pexels_9615483,state,31.9,38.5,LYING_IN_BED,SITTING_ON_BED
+outputs/pexels_8088284,state,0.0,6.0,SITTING_ON_BED,LYING_IN_BED
+outputs/pexels_8539664,state,1.0,5.4,WALKING,STANDING
+outputs/pexels_9615483,state,0.0,3.4,LYING_IN_BED,SITTING_ON_BED
+outputs/pexels_9615483,state,16.8,20.2,SITTING_ON_BED,LYING_IN_BED
+outputs/pexels_6130024,state,0.3,3.6,SITTING_ON_BED,LYING_IN_BED
+outputs/pexels_10608105,state,31.8,34.2,LYING_IN_BED,UNKNOWN
+outputs/pexels_9615483,state,12.6,15.0,LYING_IN_BED,SITTING_ON_BED
+outputs/pexels_8539659,state,5.2,7.6,STANDING,WALKING
+outputs/pexels_7938959,state,0.0,2.0,SITTING_ON_BED,UNKNOWN

@@ -1,0 +1,5 @@
+{"video": "examples/data/pexels_9615483.mp4", "duration": 38.52, "activity": [
+    {"start": 0.0, "end": 15.0, "label": "LYING_IN_BED"},
+    {"start": 15.0, "end": 31.9, "label": "SITTING_ON_BED"},
+    {"start": 31.9, "end": 38.52, "label": "LYING_IN_BED"}
+  ], "events": []}

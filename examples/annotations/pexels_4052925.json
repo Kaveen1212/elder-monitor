@@ -1,0 +1,5 @@
+{"video": "examples/data/pexels_4052925.mp4", "duration": 21.64, "activity": [
+    {"start": 0.0, "end": 20.9, "label": "SITTING_ON_BED"},
+    {"start": 20.9, "end": 21.3, "label": "STANDING"},
+    {"start": 21.3, "end": 21.64, "label": "WALKING"}
+  ], "events": [{"event": "bed_exit", "time": 20.9}]}

@@ -1,0 +1,20 @@
+{
+  "bed_events": [
+    {
+      "event": "return_to_bed",
+      "episode_id": 1,
+      "start_time": "00:00:08",
+      "confirmed_time": "00:00:10",
+      "start_sec": 7.6,
+      "confirmed_sec": 9.6,
+      "previous_state": "walking",
+      "current_state": "lying_in_bed",
+      "confidence": 0.45,
+      "decision": "NORMAL",
+      "evidence": []
+    }
+  ],
+  "alerts": [],
+  "rejected_exit_candidates": [],
+  "unresolved_candidates": []
+}

@@ -1,0 +1,82 @@
+{
+  "bed_events": [
+    {
+      "event": "bed_exit",
+      "episode_id": 1,
+      "start_time": "00:00:13",
+      "confirmed_time": "00:00:17",
+      "start_sec": 13.2,
+      "confirmed_sec": 16.6,
+      "previous_state": "sitting_on_bed",
+      "current_state": "walking",
+      "confidence": 0.13,
+      "decision": "MONITOR",
+      "evidence": []
+    },
+    {
+      "event": "return_to_bed",
+      "episode_id": 1,
+      "start_time": "00:00:27",
+      "confirmed_time": "00:00:37",
+      "start_sec": 27.0,
+      "confirmed_sec": 37.0,
+      "previous_state": "walking",
+      "current_state": "lying_in_bed",
+      "confidence": 0.83,
+      "decision": "NORMAL",
+      "evidence": [
+        {
+          "action": "keep_return_start",
+          "window": [
+            29.8,
+            32.4
+          ],
+          "finding": "out of bed 2.6s without departing; start kept at 27.0s"
+        }
+      ]
+    }
+  ],
+  "alerts": [
+    {
+      "rule": "UNCERTAIN",
+      "decision": "MONITOR",
+      "start_sec": 0.0,
+      "end_sec": 0.8,
+      "start_time": "00:00:00",
+      "end_time": "00:00:01"
+    },
+    {
+      "rule": "EVENT_PENDING",
+      "decision": "MONITOR",
+      "start_sec": 8.4,
+      "end_sec": 10.8,
+      "start_time": "00:00:08",
+      "end_time": "00:00:11"
+    },
+    {
+      "rule": "EVENT_PENDING",
+      "decision": "MONITOR",
+      "start_sec": 13.2,
+      "end_sec": 16.6,
+      "start_time": "00:00:13",
+      "end_time": "00:00:17"
+    },
+    {
+      "rule": "UNCERTAIN",
+      "decision": "MONITOR",
+      "start_sec": 16.0,
+      "end_sec": 24.8,
+      "start_time": "00:00:16",
+      "end_time": "00:00:25"
+    }
+  ],
+  "rejected_exit_candidates": [
+    {
+      "start_sec": 8.4,
+      "end_sec": 10.8,
+      "reason": "back_in_bed_before_departure",
+      "evidence": []
+    }
+  ],
+  "unresolved_candidates": []
+}

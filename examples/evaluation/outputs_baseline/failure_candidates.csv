@@ -1,0 +1,4 @@
+clip,kind,start_sec,end_sec,ground_truth,predicted
+outputs_baseline/roundtrip_4049556,state,29.8,32.4,SITTING_ON_BED,STANDING
+outputs_baseline/pexels_4049556,state,8.4,10.8,SITTING_ON_BED,STANDING
+outputs_baseline/roundtrip_4049556,state,8.4,10.8,SITTING_ON_BED,STANDING

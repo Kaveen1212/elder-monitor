@@ -1,0 +1,15 @@
+{
+  "bed_events": [],
+  "alerts": [
+    {
+      "rule": "UNCERTAIN",
+      "decision": "MONITOR",
+      "start_sec": 0.0,
+      "end_sec": 1.0,
+      "start_time": "00:00:00",
+      "end_time": "00:00:01"
+    }
+  ],
+  "rejected_exit_candidates": [],
+  "unresolved_candidates": []
+}

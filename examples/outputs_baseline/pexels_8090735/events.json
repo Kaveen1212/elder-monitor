@@ -1,0 +1,37 @@
+{
+  "bed_events": [
+    {
+      "event": "bed_exit",
+      "episode_id": 1,
+      "start_time": "00:00:05",
+      "confirmed_time": "00:00:06",
+      "start_sec": 4.59,
+      "confirmed_sec": 6.38,
+      "previous_state": "sitting_on_bed",
+      "current_state": "walking",
+      "confidence": 0.68,
+      "decision": "MONITOR",
+      "evidence": []
+    }
+  ],
+  "alerts": [
+    {
+      "rule": "UNCERTAIN",
+      "decision": "MONITOR",
+      "start_sec": 0.0,
+      "end_sec": 0.42,
+      "start_time": "00:00:00",
+      "end_time": "00:00:00"
+    },
+    {
+      "rule": "EVENT_PENDING",
+      "decision": "MONITOR",
+      "start_sec": 4.59,
+      "end_sec": 6.38,
+      "start_time": "00:00:05",
+      "end_time": "00:00:06"
+    }
+  ],
+  "rejected_exit_candidates": [],
+  "unresolved_candidates": []
+}

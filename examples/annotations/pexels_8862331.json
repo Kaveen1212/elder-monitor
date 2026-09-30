@@ -1,0 +1,3 @@
+{"video": "examples/data/pexels_8862331.mp4", "duration": 35.4, "activity": [
+    {"start": 0.0, "end": 35.4, "label": "SITTING_ON_BED"}
+  ], "events": []}

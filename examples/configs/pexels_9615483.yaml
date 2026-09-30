@@ -1,0 +1,4 @@
+scene:
+  bed_polygon: [[0.0, 0.56], [0.2, 0.5], [1.0, 0.5], [1.0, 0.93], [0.0, 0.98]]
+  chair_polygons: []
+  ignore_polygons: []

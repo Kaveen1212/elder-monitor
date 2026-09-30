@@ -1,0 +1,1 @@
+{"trigger": "EXIT_CANDIDATE", "window": [4.59, 6.38], "steps": [{"action": "look_back", "window": [0.0, 4.59], "finding": {"label": "SITTING_ON_BED", "share": 0.9, "seconds_before": 0.6}}, {"action": "look_ahead", "window": [4.59, 7.67], "finding": "walks away from the bed; departure confirmed at 6.4s"}], "outcome": "BED_EXIT confirmed", "reason": "", "vlm_calls_total": 0}

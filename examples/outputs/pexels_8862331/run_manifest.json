@@ -1,0 +1,157 @@
+{
+  "schema_version": "1.4",
+  "code_version": "0.1.0",
+  "mode": "offline",
+  "video": "data\\pexels_8862331.mp4",
+  "video_hash": "5036d693a0fa19cf9dddd1e3aa13b715739aee3c6c11dced7b3bd431bc4209b0",
+  "duration_sec": 35.4,
+  "config_hash": "4e4ef931dce89eb9",
+  "pose_model": "yolo11n-pose.pt",
+  "vlm_model": "Qwen/Qwen2.5-VL-3B-Instruct",
+  "agent_enabled": true,
+  "vlm_calls": 3,
+  "sampling_fps": 5,
+  "samples": 177,
+  "perception_sec": 5.1,
+  "reused_observations": "outputs\\pexels_8862331\\observations.jsonl",
+  "total_runtime_sec": 30.4,
+  "platform": "Windows-11-10.0.26200-SP0",
+  "config": {
+    "scene": {
+      "bed_polygon": [
+        [
+          0.33,
+          0.68
+        ],
+        [
+          0.73,
+          0.68
+        ],
+        [
+          0.78,
+          0.72
+        ],
+        [
+          0.95,
+          1.0
+        ],
+        [
+          0.11,
+          1.0
+        ],
+        [
+          0.29,
+          0.72
+        ]
+      ],
+      "chair_polygons": [],
+      "ignore_polygons": [
+        [
+          [
+            0.13,
+            0.62
+          ],
+          [
+            0.23,
+            0.62
+          ],
+          [
+            0.23,
+            0.735
+          ],
+          [
+            0.13,
+            0.735
+          ]
+        ]
+      ],
+      "ignore_share": 0.8,
+      "near_bed_margin": 0.08,
+      "edge_margin": 0.06
+    },
+    "target": {
+      "point": null,
+      "time_sec": 0.0
+    },
+    "sampling": {
+      "fps": 5
+    },
+    "vision": {
+      "model": "yolo11n-pose.pt",
+      "tracker": "bytetrack.yaml",
+      "det_conf": 0.1,
+      "device": null,
+      "kp_conf": 0.3,
+      "min_body_keypoints": 4
+    },
+    "identity": {
+      "min_det_conf": 0.5,
+      "min_similarity": 0.5,
+      "margin": 0.1,
+      "max_jump": 0.25,
+      "jump_per_sec": 0.5
+    },
+    "posture": {
+      "lying_enter_deg": 60,
+      "lying_exit_deg": 45,
+      "foreshortened_ratio": 0.8,
+      "lying_aspect": 1.4,
+      "upright_aspect": 0.9,
+      "in_bed_fraction": 0.5,
+      "sit_knee_angle": 140,
+      "sit_thigh_ratio": 0.72,
+      "sit_knee_ratio": 0.55,
+      "sit_thigh_angle": 50,
+      "walk_enter_speed": 0.5,
+      "walk_exit_speed": 0.3,
+      "speed_window_sec": 1.0,
+      "box_speed_window_sec": 0.4,
+      "box_context_sec": 1.0,
+      "box_motion_conf": 0.3
+    },
+    "temporal": {
+      "smooth_samples": 5,
+      "dwell_sec": {
+        "default": 1.0,
+        "UNKNOWN": 2.0,
+        "LYING_ON_FLOOR": 2.0
+      }
+    },
+    "events": {
+      "exit_persist_sec": 2.0,
+      "left_view_sec": 1.0,
+      "exit_dwell_sec": 30.0,
+      "lookahead_sec": 8.0,
+      "return_rule": "lying",
+      "return_persist_sec": 2.0
+    },
+    "agent": {
+      "enabled": true,
+      "lookback_sec": 8.0,
+      "lookahead_sec": 8.0,
+      "max_rounds": 2,
+      "min_gap_sec": 2.0,
+      "max_bridge_sec": 30.0,
+      "vlm_frames": 3,
+      "upright_hips_share": 0.8
+    },
+    "vlm": {
+      "enabled": true,
+      "model": "Qwen/Qwen2.5-VL-3B-Instruct",
+      "max_calls": 60,
+      "max_side": 448,
+      "max_new_tokens": 64
+    },
+    "policy": {
+      "edge_sit_sec": 60,
+      "edge_fraction": 0.5,
+      "max_out_of_bed_sec": 300,
+      "max_absence_sec": 900,
+      "degraded_view_share": 0.25,
+      "event_decision": {
+        "bed_exit": "MONITOR",
+        "return_to_bed": "NORMAL"
+      }
+    }
+  }
+}

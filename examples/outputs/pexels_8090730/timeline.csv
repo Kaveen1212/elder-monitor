@@ -1,0 +1,5 @@
+start,end,start_sec,end_sec,duration_sec,label,confidence
+00:00,00:07,0.0,7.22,7.22,LYING_IN_BED,0.455
+00:07,00:11,7.22,10.59,3.38,SITTING_ON_BED,0.443
+00:11,00:12,10.59,12.22,1.63,WALKING,0.269
+00:12,00:15,12.22,15.31,3.09,UNKNOWN,0.0

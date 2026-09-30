@@ -1,0 +1,4 @@
+start,end,start_sec,end_sec,duration_sec,label
+00:00,00:09,0.0,8.8,8.8,OUT_OF_BED
+00:09,00:15,8.8,15.0,6.2,UNKNOWN
+00:15,00:16,15.0,15.92,0.92,IN_BED

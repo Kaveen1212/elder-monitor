@@ -1,0 +1,66 @@
+{
+  "bed_events": [
+    {
+      "event": "bed_exit",
+      "episode_id": 1,
+      "start_time": "00:00:13",
+      "confirmed_time": "00:00:17",
+      "start_sec": 13.2,
+      "confirmed_sec": 16.6,
+      "previous_state": "sitting_on_bed",
+      "current_state": "walking",
+      "confidence": 0.12,
+      "decision": "MONITOR",
+      "evidence": [
+        {
+          "action": "look_back",
+          "window": [
+            5.2,
+            13.2
+          ],
+          "finding": {
+            "label": "SITTING_ON_BED",
+            "share": 0.95,
+            "seconds_before": 0.2
+          }
+        },
+        {
+          "action": "look_ahead",
+          "window": [
+            13.2,
+            17.57
+          ],
+          "finding": "walks away and leaves the camera view; departure confirmed at 16.6s"
+        }
+      ]
+    }
+  ],
+  "alerts": [
+    {
+      "rule": "UNCERTAIN",
+      "decision": "MONITOR",
+      "start_sec": 0.0,
+      "end_sec": 1.0,
+      "start_time": "00:00:00",
+      "end_time": "00:00:01"
+    },
+    {
+      "rule": "EVENT_PENDING",
+      "decision": "MONITOR",
+      "start_sec": 13.2,
+      "end_sec": 16.6,
+      "start_time": "00:00:13",
+      "end_time": "00:00:17"
+    },
+    {
+      "rule": "UNCERTAIN",
+      "decision": "MONITOR",
+      "start_sec": 16.0,
+      "end_sec": 17.57,
+      "start_time": "00:00:16",
+      "end_time": "00:00:18"
+    }
+  ],
+  "rejected_exit_candidates": [],
+  "unresolved_candidates": []
+}

@@ -1,0 +1,146 @@
+import math
+from dataclasses import dataclass
+
+import cv2
+import numpy as np
+
+
+@dataclass
+class Person:
+    track_id: int | None
+    bbox: list
+    keypoints: list
+    conf: float
+
+    @property
+    def center(self):
+        x1, y1, x2, y2 = self.bbox
+        return ((x1 + x2) / 2, (y1 + y2) / 2)
+
+
+class PoseTracker:
+    def __init__(self, cfg):
+        from ultralytics import YOLO
+
+        v = cfg["vision"]
+        self.model = YOLO(v["model"])
+        self.kwargs = {"persist": True, "tracker": v["tracker"], "conf": v["det_conf"], "classes": [0],
+                       "verbose": False, "device": v.get("device")}
+
+    @property
+    def revision(self):
+        return str(getattr(self.model, "ckpt_path", None) or self.model.model_name)
+
+    def __call__(self, frame):
+        r = self.model.track(frame, **self.kwargs)[0]
+        if r.boxes is None or len(r.boxes) == 0:
+            return []
+        boxes = r.boxes.xyxy.cpu().numpy()
+        confs = r.boxes.conf.cpu().numpy()
+        ids = r.boxes.id.int().cpu().tolist() if r.boxes.id is not None else [None] * len(boxes)
+        kps = r.keypoints.data.cpu().numpy() if r.keypoints is not None else np.zeros((len(boxes), 17, 3))
+        return [Person(i, b.tolist(), k.tolist(), float(c)) for i, b, k, c in zip(ids, boxes, kps, confs)]
+
+
+def appearance(frame, bbox):
+    h, w = frame.shape[:2]
+    x1, y1, x2, y2 = (round(v) for v in bbox)
+    crop = frame[max(y1, 0):min(y2, h), max(x1, 0):min(x2, w)]
+    if crop.size == 0:
+        return None
+    hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+    hist = cv2.calcHist([hsv], [0, 1], None, [16, 8], [0, 180, 0, 256])
+    return cv2.normalize(hist, hist)
+
+
+def same_body(a, b, kp_conf):
+    ka, kb = np.asarray(a.keypoints), np.asarray(b.keypoints)
+    ok = (ka[:, 2] >= kp_conf) & (kb[:, 2] >= kp_conf)
+    scale = max(a.bbox[3] - a.bbox[1], b.bbox[3] - b.bbox[1], 1.0)
+    return ok.sum() >= 4 and np.median(np.linalg.norm(ka[ok, :2] - kb[ok, :2], axis=1)) < 0.15 * scale
+
+
+class TargetSelector:
+    """Keeps the monitored resident separate from temporary tracker IDs.
+
+    Other confident people tracked alongside the resident are remembered and never become the resident;
+    duplicate boxes on the resident's own body are not, so they can still pass re-association.
+    """
+
+    def __init__(self, cfg, scene):
+        t, i = cfg["target"], cfg["identity"]
+        self.scene = scene
+        self.point = None if t.get("point") is None else (t["point"][0] * scene.width, t["point"][1] * scene.height)
+        self.start = t.get("time_sec", 0.0) if self.point is not None else 0.0
+        self.min_conf, self.min_sim, self.margin = i["min_det_conf"], i["min_similarity"], i["margin"]
+        self.max_jump, self.jump_per_sec = i["max_jump"] * scene.height, i["jump_per_sec"] * scene.height
+        self.kp_conf = cfg["vision"]["kp_conf"]
+        self.selected, self.track_id, self.hist, self.last_pos, self.last_t = False, None, None, None, None
+        self.others = set()
+        self.last_in_bed = None
+
+    def select(self, t, frame, persons):
+        persons = [p for p in persons if (self.selected and p.track_id is not None and p.track_id == self.track_id)
+                   or not self.scene.ignored(p.bbox)]
+        if not self.selected:
+            p = self._initial(persons) if t >= self.start else None
+            if p is None:
+                return None, True, "target_not_selected"
+            self._adopt(t, frame, p, persons)
+            return p, True, "selected"
+        for p in persons:
+            if p.track_id is not None and p.track_id == self.track_id:
+                if p.conf < self.min_conf and self.last_in_bed is False and self.scene.in_bed(self._anchor(p)):
+                    break
+                self._adopt(t, frame, p, persons)
+                return p, True, "tracked"
+        candidates = [p for p in persons if p.track_id not in self.others and p.conf >= self.min_conf]
+        if not candidates:
+            return None, not persons, "not_detected" if not persons else "identity_uncertain"
+        return self._reassociate(t, frame, persons, candidates)
+
+    def _initial(self, persons):
+        persons = [p for p in persons if p.conf >= self.min_conf]
+        if not persons:
+            return None
+        if self.point is not None:
+            px, py = self.point
+            inside = [p for p in persons if p.bbox[0] <= px <= p.bbox[2] and p.bbox[1] <= py <= p.bbox[3]]
+            return min(inside, key=lambda p: math.dist(p.center, self.point)) if inside else None
+        in_bed = [p for p in persons if self.scene.in_bed(p.center)]
+        if in_bed:
+            return max(in_bed, key=lambda p: p.conf)
+        return persons[0] if len(persons) == 1 else None
+
+    def _reassociate(self, t, frame, persons, candidates):
+        allowed = self.max_jump + self.jump_per_sec * (t - self.last_t)
+        scored = []
+        for p in candidates:
+            if math.dist(p.center, self.last_pos) > allowed:
+                continue
+            h = appearance(frame, p.bbox)
+            sim = -1.0 if h is None or self.hist is None else cv2.compareHist(self.hist, h, cv2.HISTCMP_CORREL)
+            scored.append((sim, p))
+        scored.sort(key=lambda s: s[0], reverse=True)
+        if scored and scored[0][0] >= self.min_sim:
+            runner_up = scored[1][0] if len(scored) > 1 else -1.0
+            if scored[0][0] - runner_up >= self.margin:
+                self._adopt(t, frame, scored[0][1], persons)
+                return scored[0][1], True, "reassociated"
+        return None, False, "identity_uncertain"
+
+    def _anchor(self, p):
+        kp = np.asarray(p.keypoints)
+        hips = [kp[i, :2] for i in (11, 12) if kp[i, 2] >= self.kp_conf]
+        return tuple(np.mean(hips, axis=0)) if hips else p.center
+
+    def _adopt(self, t, frame, p, persons):
+        h = appearance(frame, p.bbox)
+        if h is not None:
+            self.hist = h if self.hist is None else 0.9 * self.hist + 0.1 * h
+        if p.track_id is not None:
+            self.track_id = p.track_id
+        self.others |= {q.track_id for q in persons if q is not p and q.track_id is not None and q.conf >= self.min_conf
+                        and not same_body(q, p, self.kp_conf)} - {self.track_id}
+        self.selected, self.last_pos, self.last_t = True, p.center, t
+        self.last_in_bed = bool(self.scene.in_bed(self._anchor(p)))

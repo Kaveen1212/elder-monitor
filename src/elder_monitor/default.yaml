@@ -1,0 +1,92 @@
+# Default parameters. A scene config (e.g. configs/demo.yaml) is merged on top.
+# Thresholds are engineering starting values to tune on development clips, not clinical cut-offs.
+
+scene:
+  bed_polygon: null          # required, normalised [[x, y], ...] of the visible mattress
+  chair_polygons: []         # optional, normalised polygons of chairs / armchairs
+  ignore_polygons: []        # optional, normalised polygons of mirrors / TV screens; boxes mostly inside are dropped
+  ignore_share: 0.8
+  near_bed_margin: 0.08      # band around the bed (fraction of frame height) treated as "beside the bed"
+  edge_margin: 0.06          # hips this close to the bed outline count as sitting on the edge
+
+target:
+  point: null                # normalised [x, y] on the resident at time_sec; null = person in bed or sole person
+  time_sec: 0.0
+
+sampling:
+  fps: 5
+
+vision:
+  model: yolo11n-pose.pt
+  tracker: bytetrack.yaml    # resolved next to this file unless the path exists
+  det_conf: 0.1              # low so ByteTrack's second (low-score) association stage gets boxes
+  device: null
+  kp_conf: 0.3
+  min_body_keypoints: 4
+
+identity:
+  min_det_conf: 0.5          # a detection must be this confident to be selected or re-attached as the resident
+  min_similarity: 0.5        # HSV histogram correlation needed to re-attach a lost target
+  margin: 0.1                # best candidate must beat the runner-up by this much
+  max_jump: 0.25             # allowed re-attach distance (fraction of frame height) ...
+  jump_per_sec: 0.5          # ... growing with time since the target was last seen
+
+posture:
+  lying_enter_deg: 60        # body axis angle from vertical to enter a lying state
+  lying_exit_deg: 45         # and to leave it (hysteresis)
+  foreshortened_ratio: 0.8   # legs hidden, on the bed, torso < this x shoulder width = lying along the camera axis
+  lying_aspect: 1.4          # bbox w/h fallback when no body axis is measurable
+  upright_aspect: 0.9
+  in_bed_fraction: 0.5       # share of keypoints inside the bed polygon for "on the bed"
+  sit_knee_angle: 140        # hip-knee-ankle angle below this = seated (side / oblique view)
+  sit_thigh_ratio: 0.72      # thigh / shin image length below this = seated (thigh pointing at the camera)
+  sit_knee_ratio: 0.55       # (knee_y - hip_y) / torso length below this = seated, when ankles are hidden
+  sit_thigh_angle: 50        # thigh this far from vertical = seated, when ankles and torso are hidden
+  walk_enter_speed: 0.5      # torso lengths per second
+  walk_exit_speed: 0.3
+  speed_window_sec: 1.0
+  box_speed_window_sec: 0.4  # box-centre speed, used when keypoints drop out
+  box_context_sec: 1.0       # recent posture must be mostly upright for box motion to count as walking
+  box_motion_conf: 0.3
+
+temporal:
+  smooth_samples: 5          # centred majority filter over proposals
+  dwell_sec:                 # a new state must persist this long before it is committed
+    default: 1.0
+    UNKNOWN: 2.0
+    LYING_ON_FLOOR: 2.0
+
+events:
+  exit_persist_sec: 2.0      # observed time walking or beyond the near-bed band that confirms a bed exit
+  left_view_sec: 1.0         # or: walking, then out of view this long without getting back into bed
+  exit_dwell_sec: 30.0       # or: observed out of bed this long without returning, even beside it (bedside chair)
+  lookahead_sec: 8.0         # exit re-check window (agent and --no-agent)
+  return_rule: lying         # lying (strict, as in the brief) | sitting
+  return_persist_sec: 2.0
+
+agent:
+  enabled: true
+  lookback_sec: 8.0
+  lookahead_sec: 8.0         # look-ahead window for ambiguous gaps
+  max_rounds: 2              # context expansions per trigger
+  min_gap_sec: 2.0           # UNKNOWN runs shorter than this are left to the dwell filter
+  max_bridge_sec: 30.0       # longest in-bed gap bridged from geometry alone
+  vlm_frames: 3              # frames sampled per trigger when the VLM is consulted
+  upright_hips_share: 0.8    # STANDING with the hips over the bed this often, still, between two sits: ask the VLM
+
+vlm:
+  enabled: true
+  model: Qwen/Qwen2.5-VL-3B-Instruct
+  max_calls: 60
+  max_side: 448
+  max_new_tokens: 64
+
+policy:
+  edge_sit_sec: 60           # MONITOR: mostly on the bed edge over the last 60 s of sitting
+  edge_fraction: 0.5
+  max_out_of_bed_sec: 300    # ALERT: continuously observed out of bed longer than this
+  max_absence_sec: 900       # ALERT: seen leaving the bed and not back in it this long, observed or not
+  degraded_view_share: 0.25  # summary warning: this share of the detected samples had too few keypoints (camera placement)
+  event_decision:
+    bed_exit: MONITOR
+    return_to_bed: NORMAL

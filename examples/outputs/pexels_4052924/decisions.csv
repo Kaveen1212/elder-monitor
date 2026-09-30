@@ -1,0 +1,5 @@
+start,end,start_sec,end_sec,duration_sec,label,reasons
+00:00,00:23,0.0,23.4,23.4,NORMAL,
+00:23,00:26,23.4,25.6,2.2,MONITOR,EVENT_PENDING
+00:26,00:26,25.6,26.0,0.4,NORMAL,
+00:26,00:28,26.0,27.88,1.88,MONITOR,UNCERTAIN

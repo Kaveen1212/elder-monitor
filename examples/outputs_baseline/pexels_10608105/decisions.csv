@@ -1,0 +1,4 @@
+start,end,start_sec,end_sec,duration_sec,label,reasons
+00:00,00:01,0.0,0.8,0.8,MONITOR,UNCERTAIN
+00:01,00:32,0.8,32.0,31.2,NORMAL,
+00:32,00:34,32.0,34.24,2.24,MONITOR,UNCERTAIN
